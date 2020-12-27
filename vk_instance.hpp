@@ -57,13 +57,20 @@ namespace vk_instance {
 		else return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
+	void destroy_debug_msgr(VkInstance instance, VkDebugUtilsMessengerEXT debug_msgr) {
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		if (func) func(instance, debug_msgr, nullptr);
+		else throw std::runtime_error("Coud not get address of vkDestroyDebugUtilsMessengerEXT!");
+	}
+
 	// If validation is enabled, VALIDATION_EXTENSIONS and VALIDATION_LAYERS
 	// will be added to the user-specified extensions and layers, and a
-	// debug callback will be added.
+	// debug callback will be added. debug_msgr maybe be null if validation
+	// is not enabled.
 	void create(std::vector<const char*> extensions,
 		    std::vector<const char*> layers,
 		    bool validation_enabled,
-		    VkInstance* instance) {
+		    VkInstance* instance, VkDebugUtilsMessengerEXT* debug_msgr) {
 		VkInstanceCreateInfo instance_info{};
 		instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 
@@ -106,8 +113,7 @@ namespace vk_instance {
 
 		if (validation_enabled) {
 			// Create debug messenger
-			VkDebugUtilsMessengerEXT debug_msgr;
-			if (create_debug_msgr(*instance, &debug_msgr_info, &debug_msgr) != VK_SUCCESS)
+			if (create_debug_msgr(*instance, &debug_msgr_info, debug_msgr) != VK_SUCCESS)
 				throw std::runtime_error("Failed to create debug messenger!");
 		}
 

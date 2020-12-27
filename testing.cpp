@@ -42,13 +42,15 @@ struct GWindow {
 int main() {
 	auto glfw_window = GWindow(INIT_WIDTH, INIT_HEIGHT);
 
-	// Create instance
 	VkInstance instance;
-	vk_instance::create(glfw_window.req_instance_exts, {}, VALIDATION_ENABLED, &instance);
+	// Will only actually be filled if validation is enabled
+	VkDebugUtilsMessengerEXT debug_msgr;
+	vk_instance::create(glfw_window.req_instance_exts, {}, VALIDATION_ENABLED, &instance, &debug_msgr);
 
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
 	}
 
+	vk_instance::destroy_debug_msgr(instance, debug_msgr);
 	vkDestroyInstance(instance, nullptr);
 }
