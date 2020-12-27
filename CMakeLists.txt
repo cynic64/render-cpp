@@ -1,16 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
+# Both Release and Debug will be built with -O3, but Release will set NDEBUG.
+# set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS "-O3")
 
 # Set the project name
 project(RenderCpp)
 
 # Compile options
 if (MSVC)
-    # warning level 4 and all warnings as errors
-    add_compile_options(/W4 /WX)
+    # warning level 4
+    add_compile_options(/W4)
 else()
-    # lots of warnings and all warnings as errors
+    # lots of warnings
     add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
