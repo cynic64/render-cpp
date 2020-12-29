@@ -1,5 +1,5 @@
 #include "vk_instance.hpp"
-#include <vulkan/vulkan_core.h>
+#include "vk_phys_dev.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -55,16 +55,9 @@ int main() {
 	if (glfwCreateWindowSurface(instance, glfw_window.window, nullptr, &surface) != VK_SUCCESS) throw std::runtime_error("Could not create surface!");
 
 	// Create physical device
-	uint32_t phys_dev_ct;
-	vkEnumeratePhysicalDevices(instance, &phys_dev_ct, nullptr);
-	if (phys_dev_ct == 0) throw std::runtime_error("No GPUs found!");
-
-	std::vector<VkPhysicalDevice> phys_devs(phys_dev_ct);
-	vkEnumeratePhysicalDevices(instance, &phys_dev_ct, phys_devs.data());
-	auto phys_dev = phys_devs[0];
-	VkPhysicalDeviceProperties phys_dev_props;
-	vkGetPhysicalDeviceProperties(phys_dev, &phys_dev_props);
-	std::cout << "Using device: " << phys_dev_props.deviceName << std::endl;
+	VkPhysicalDevice phys_dev;
+	auto phys_dev_name = vk_phys_dev::create(instance, vk_phys_dev::default_scorer, &phys_dev);
+	std::cout << "Using device: " << phys_dev_name << std::endl;
 
 	// Find queue families
 	std::optional<uint32_t> graphics_fam;

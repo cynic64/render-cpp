@@ -24,6 +24,7 @@ endif()
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 add_library(VkInstance vk_instance.cpp)
+add_library(VkPhysDev vk_phys_dev.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -32,4 +33,5 @@ add_executable(Testing testing.cpp)
 target_link_libraries(Testing glfw)
 target_link_libraries(Testing vulkan)
 target_link_libraries(Testing VkInstance)
+target_link_libraries(Testing VkPhysDev)
 

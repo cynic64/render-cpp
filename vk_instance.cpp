@@ -1,3 +1,5 @@
+#include "vk_instance.hpp"
+
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <stdexcept>

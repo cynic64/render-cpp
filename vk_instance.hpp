@@ -1,4 +1,7 @@
 #include <vulkan/vulkan.h>
+#ifndef VK_INSTANCE_H
+#define VK_INSTANCE_H
+
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -14,3 +17,5 @@ namespace vk_instance {
 
 	void destroy_debug_msgr(VkInstance instance, VkDebugUtilsMessengerEXT debug_msgr);
 }
+
+#endif // VK_INSTANCE_H
