@@ -1,5 +1,6 @@
 #include "vk_instance.hpp"
 #include "vk_phys_dev.hpp"
+#include "vk_queue.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -60,28 +61,9 @@ int main() {
 	std::cout << "Using device: " << phys_dev_name << std::endl;
 
 	// Find queue families
-	std::optional<uint32_t> graphics_fam;
-	std::optional<uint32_t> present_fam;
-	uint32_t queue_fam_ct;
-	vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct, nullptr);
-	std::vector<VkQueueFamilyProperties> queue_fams(queue_fam_ct);
-	vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct, queue_fams.data());
-
-	for (uint32_t i = 0; i < queue_fam_ct; ++i) {
-		if (queue_fams[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) graphics_fam = i;
-		VkBool32 present_supported;
-		vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev, i, surface, &present_supported);
-		if (present_supported) present_fam = i;
-
-		if (graphics_fam.has_value() && present_fam.has_value()) break;
-	}
-
-	if (!graphics_fam.has_value() || !present_fam.has_value())
-		throw std::runtime_error("Could not find queue families supporting graphics and presentation!");
-
-	std::unordered_set<uint32_t> unique_queue_fams;
-	unique_queue_fams.insert(graphics_fam.value());
-	unique_queue_fams.insert(present_fam.value());
+	vk_queue::QueueFamilies queue_fams(phys_dev, surface);
+	if (!queue_fams.graphics.has_value() || !queue_fams.present.has_value())
+		throw std::runtime_error("Unable to find necessary queue families!");
 
 	// Create logical device
 	VkDevice device;
@@ -90,7 +72,7 @@ int main() {
 	// families
 	std::vector<VkDeviceQueueCreateInfo> dev_queue_infos;
 	float queue_priority = 1.0f;
-	for (auto queue_fam : unique_queue_fams) {
+	for (auto queue_fam : queue_fams.unique) {
 		VkDeviceQueueCreateInfo dev_queue_info{};
 		dev_queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		dev_queue_info.queueCount = 1;
@@ -111,8 +93,8 @@ int main() {
 
 	// Create queues
 	VkQueue graphics_queue, present_queue;
-	vkGetDeviceQueue(device, graphics_fam.value(), 0, &graphics_queue);
-	vkGetDeviceQueue(device, present_fam.value(), 0, &present_queue);
+	vkGetDeviceQueue(device, queue_fams.graphics.value(), 0, &graphics_queue);
+	vkGetDeviceQueue(device, queue_fams.present.value(), 0, &present_queue);
 
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
