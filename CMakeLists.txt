@@ -26,6 +26,7 @@ find_package(Vulkan REQUIRED)
 add_library(VkInstance vk_instance.cpp)
 add_library(VkPhysDev vk_phys_dev.cpp)
 add_library(VkQueue vk_queue.cpp)
+add_library(VkDevice vk_device.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -36,4 +37,5 @@ target_link_libraries(Testing vulkan)
 target_link_libraries(Testing VkInstance)
 target_link_libraries(Testing VkPhysDev)
 target_link_libraries(Testing VkQueue)
+target_link_libraries(Testing VkDevice)
 

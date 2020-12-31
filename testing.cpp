@@ -1,3 +1,4 @@
+#include "vk_device.hpp"
 #include "vk_instance.hpp"
 #include "vk_phys_dev.hpp"
 #include "vk_queue.hpp"
@@ -81,20 +82,8 @@ int main() {
 		dev_queue_infos.push_back(dev_queue_info);
         }
 
-        VkPhysicalDeviceFeatures dev_features{};
-
-	VkDeviceCreateInfo device_info{};
-	device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	device_info.queueCreateInfoCount = static_cast<uint32_t>(dev_queue_infos.size());
-	device_info.pQueueCreateInfos = dev_queue_infos.data();
-	device_info.pEnabledFeatures = &dev_features;
-
-	if (vkCreateDevice(phys_dev, &device_info, nullptr, &device) != VK_SUCCESS) throw std::runtime_error("Could not create device!");
-
-	// Create queues
-	VkQueue graphics_queue, present_queue;
-	vkGetDeviceQueue(device, queue_fams.graphics.value(), 0, &graphics_queue);
-	vkGetDeviceQueue(device, queue_fams.present.value(), 0, &present_queue);
+	std::vector<const char *> dev_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+	vk_device::create(phys_dev, dev_queue_infos, {}, dev_extensions, &device);
 
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();

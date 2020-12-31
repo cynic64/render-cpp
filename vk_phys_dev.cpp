@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
-#include <vulkan/vulkan_core.h>
 
 namespace vk_phys_dev {
 	std::string create(VkInstance instance, ScoringFunction fun, VkPhysicalDevice* chosen_phys_dev) {
