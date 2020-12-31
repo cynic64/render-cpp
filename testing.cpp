@@ -71,16 +71,7 @@ int main() {
 
 	// Necessary because the device has to support all our different queue
 	// families
-	std::vector<VkDeviceQueueCreateInfo> dev_queue_infos;
-	float queue_priority = 1.0f;
-	for (auto queue_fam : queue_fams.unique) {
-		VkDeviceQueueCreateInfo dev_queue_info{};
-		dev_queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		dev_queue_info.queueCount = 1;
-		dev_queue_info.queueFamilyIndex = queue_fam;
-		dev_queue_info.pQueuePriorities = &queue_priority;
-		dev_queue_infos.push_back(dev_queue_info);
-        }
+	auto dev_queue_infos = vk_device::default_queue_infos(queue_fams.unique.begin(), queue_fams.unique.end());
 
 	std::vector<const char *> dev_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 	vk_device::create(phys_dev, dev_queue_infos, {}, dev_extensions, &device);

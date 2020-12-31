@@ -38,4 +38,4 @@ namespace vk_device {
 		if (vkCreateDevice(phys_dev, &device_info, nullptr, device) != VK_SUCCESS)
 			throw std::runtime_error("Could not create device!");
 	}
-}
+} // namespace vk_device
