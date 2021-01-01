@@ -23,7 +23,7 @@ namespace vk_phys_dev {
 			VkPhysicalDeviceFeatures features;
 			vkGetPhysicalDeviceFeatures(phys_dev, &features);
 
-			auto score = fun(props, features);
+			auto score = fun(phys_dev, props, features);
 			if (score > best_score) {
 				best_score = score;
 				*chosen_phys_dev = phys_dev;
@@ -36,7 +36,7 @@ namespace vk_phys_dev {
 		return best_name;
 	}
 	
-	int default_scorer(VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) {
+	int default_scorer(VkPhysicalDevice const&, VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) {
 		auto score = 1;
 		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 1;
 		

@@ -3,14 +3,14 @@
 
 #include <vulkan/vulkan.h>
 #include <optional>
-#include <unordered_set>
+#include <vector>
 
 namespace vk_queue {
 	struct QueueFamilies {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;
 
-		std::unordered_set<uint32_t> unique;
+		std::vector<uint32_t> unique;
 
 		// Surface can be nullptr if you don't care about present support
 		QueueFamilies(VkPhysicalDevice phys_dev, VkSurfaceKHR surface);
