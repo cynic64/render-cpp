@@ -27,6 +27,7 @@ add_library(VkInstance vk_instance.cpp)
 add_library(VkPhysDev vk_phys_dev.cpp)
 add_library(VkQueue vk_queue.cpp)
 add_library(VkDevice vk_device.cpp)
+add_library(VkSwapchain vk_swapchain.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -38,4 +39,5 @@ target_link_libraries(Testing VkInstance)
 target_link_libraries(Testing VkPhysDev)
 target_link_libraries(Testing VkQueue)
 target_link_libraries(Testing VkDevice)
+target_link_libraries(Testing VkSwapchain)
 

@@ -2,6 +2,7 @@
 #include "vk_instance.hpp"
 #include "vk_phys_dev.hpp"
 #include "vk_queue.hpp"
+#include "vk_swapchain.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -84,67 +85,14 @@ int main() {
 	std::vector<const char *> dev_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 	vk_device::create(phys_dev, dev_queue_infos, {}, dev_extensions, &device);
 
-	// Choose swapchain settings
-	VkSurfaceCapabilitiesKHR surface_caps;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, surface, &surface_caps);
-
-	uint32_t format_ct;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, surface, &format_ct, nullptr);
-	std::vector<VkSurfaceFormatKHR> formats(format_ct);
-	vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, surface, &format_ct, formats.data());
-
-	uint32_t present_mode_ct;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(phys_dev, surface, &present_mode_ct, nullptr);
-	std::vector<VkPresentModeKHR> present_modes(present_mode_ct);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(phys_dev, surface, &present_mode_ct, present_modes.data());
-
-	if (format_ct == 0 || present_mode_ct == 0)
-		throw std::runtime_error("Surface formats or present modes unsupported by physical device!");
-
-	VkFormat chosen_format;
-	VkColorSpaceKHR chosen_color_space;
-	VkPresentModeKHR chosen_present_mode;
-	if (std::any_of(formats.begin(), formats.end(), [](auto f){return f.format == VK_FORMAT_B8G8R8A8_SRGB;}))
-		chosen_format = VK_FORMAT_B8G8R8A8_SRGB;
-	else chosen_format = formats[0].format;
-
-	if (std::any_of(formats.begin(), formats.end(), [](auto f){return f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;}))
-		chosen_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-	else chosen_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-
-	if (std::find(present_modes.begin(), present_modes.end(), VK_PRESENT_MODE_MAILBOX_KHR) != present_modes.end())
-		chosen_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-	else chosen_present_mode = present_modes[0];
-
-	uint32_t chosen_image_ct = std::min(surface_caps.minImageCount + 1, surface_caps.maxImageCount);
-
-	auto [width, height] = glfw_window.get_dims();
-	
 	// Create swapchain
-	VkSwapchainCreateInfoKHR swapchain_info{};
-	swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchain_info.surface = surface;
-	swapchain_info.minImageCount = chosen_image_ct;
-	swapchain_info.imageFormat = chosen_format;
-	swapchain_info.imageColorSpace = chosen_color_space;
-	swapchain_info.imageExtent.width = std::clamp(static_cast<uint32_t>(width), surface_caps.minImageExtent.width, surface_caps.minImageExtent.width);
-	swapchain_info.imageExtent.height = std::clamp(static_cast<uint32_t>(height), surface_caps.minImageExtent.height, surface_caps.minImageExtent.height);
-	swapchain_info.imageArrayLayers = 1;
-	swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	if (queue_fams.unique.size() > 1) {
-		swapchain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		swapchain_info.queueFamilyIndexCount = queue_fams.unique.size();
-		swapchain_info.pQueueFamilyIndices = queue_fams.unique.data();
-	} else swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swapchain_info.preTransform = surface_caps.currentTransform;
-	swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swapchain_info.presentMode = chosen_present_mode;
-	swapchain_info.clipped = VK_TRUE;
-
+	auto [wwidth, wheight] = glfw_window.get_dims();
 	VkSwapchainKHR swapchain;
-	if (vkCreateSwapchainKHR(device, &swapchain_info, nullptr, &swapchain) != VK_SUCCESS)
-		throw std::runtime_error("Could not create swapchain!");
+	vk_swapchain::create(phys_dev, device, surface,
+			     VK_NULL_HANDLE, queue_fams.unique.size(), queue_fams.unique.data(),
+			     wwidth, wheight, &swapchain);
 
+	// Choose swapchain settings
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
 	}
