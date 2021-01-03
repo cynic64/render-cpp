@@ -3,6 +3,7 @@
 #include "vk_phys_dev.hpp"
 #include "vk_queue.hpp"
 #include "vk_swapchain.hpp"
+#include "vk_image.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -87,17 +88,16 @@ int main() {
 
 	// Create swapchain
 	auto [wwidth, wheight] = glfw_window.get_dims();
-	VkSwapchainKHR swapchain;
-	vk_swapchain::create(phys_dev, device, surface,
-			     VK_NULL_HANDLE, queue_fams.unique.size(), queue_fams.unique.data(),
-			     wwidth, wheight, &swapchain);
+	auto swapchain = vk_swapchain::Swapchain(phys_dev, device, surface,
+						 VK_NULL_HANDLE, queue_fams.unique.size(), queue_fams.unique.data(),
+						 wwidth, wheight);
 
 	// Choose swapchain settings
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
 	}
 
-	vkDestroySwapchainKHR(device, swapchain, nullptr);
+	swapchain.destroy();
 
 	vkDestroyDevice(device, nullptr);
 

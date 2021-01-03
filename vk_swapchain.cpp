@@ -1,29 +1,32 @@
 #include "vk_swapchain.hpp"
 
+#include "vk_image.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
 
 namespace vk_swapchain {
-	void create(VkPhysicalDevice phys_dev, VkDevice device,
-		    VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
-		    uint32_t queue_fam_ct, uint32_t* queue_fams,
-		    uint32_t window_width, uint32_t window_height,
-		    VkSwapchainKHR* swapchain,
-		    SwapchainSettings const& settings) {
+	Swapchain::Swapchain(VkPhysicalDevice phys_dev, VkDevice device,
+			     VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
+			     uint32_t queue_fam_ct, uint32_t* queue_fams,
+			     uint32_t window_width, uint32_t window_height,
+			     SwapchainSettings const& settings)
+		: device(device) {
+
 		VkSurfaceCapabilitiesKHR surface_caps;
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, surface, &surface_caps);
-
+		
 		uint32_t format_ct;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, surface, &format_ct, nullptr);
 		std::vector<VkSurfaceFormatKHR> formats(format_ct);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, surface, &format_ct, formats.data());
-
+		
 		uint32_t present_mode_ct;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(phys_dev, surface, &present_mode_ct, nullptr);
 		std::vector<VkPresentModeKHR> present_modes(present_mode_ct);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(phys_dev, surface, &present_mode_ct, present_modes.data());
-
+		
 		if (format_ct == 0 || present_mode_ct == 0)
 			throw std::runtime_error("Surface formats or present modes unsupported by physical device!");
 
@@ -70,7 +73,27 @@ namespace vk_swapchain {
 		swapchain_info.clipped = VK_TRUE;
 		swapchain_info.oldSwapchain = old_swapchain;
 
-		if (vkCreateSwapchainKHR(device, &swapchain_info, nullptr, swapchain) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(device, &swapchain_info, nullptr, &swapchain) != VK_SUCCESS)
 			throw std::runtime_error("Could not create swapchain!");
+
+		// Create images
+		uint32_t real_image_ct; // Not necessarily what we chose
+		vkGetSwapchainImagesKHR(device, swapchain, &real_image_ct, nullptr);
+		images.resize(real_image_ct);
+		vkGetSwapchainImagesKHR(device, swapchain, &real_image_ct, images.data());
+
+		// Create image views
+		for (auto i : images) image_views.push_back(vk_image::to_view(device, i, chosen_format));
+
+		format = chosen_format;
+		color_space = chosen_color_space;
+		present_mode = chosen_present_mode;
+		width = swapchain_info.imageExtent.width;
+		height = swapchain_info.imageExtent.height;
+	}
+
+	void Swapchain::destroy() {
+		for (auto i : image_views) vkDestroyImageView(device, i, nullptr);
+		vkDestroySwapchainKHR(device, swapchain, nullptr);
 	}
 }
