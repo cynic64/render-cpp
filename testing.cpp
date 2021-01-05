@@ -145,6 +145,37 @@ int main() {
 
 	VkPipelineShaderStageCreateInfo shaders[] = {vs_info, fs_info};
 
+	// Create render pass
+	VkAttachmentDescription color_attach{};
+	color_attach.format = swapchain.format;
+	color_attach.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attach.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attach.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attach.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attach.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference color_attach_ref{};
+	color_attach_ref.attachment = 0;
+	color_attach_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &color_attach_ref;
+
+	VkRenderPassCreateInfo rpass_info{};
+	rpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	rpass_info.attachmentCount = 1;
+	rpass_info.pAttachments = &color_attach;
+	rpass_info.subpassCount = 1;
+	rpass_info.pSubpasses = &subpass;
+
+	VkRenderPass rpass;
+	if (vkCreateRenderPass(device, &rpass_info, nullptr, &rpass) != VK_SUCCESS)
+		throw std::runtime_error("Could not create render pass!");
+
 	// Create pipeline layout
 	VkPipelineLayoutCreateInfo layout_info{};
 	layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -200,12 +231,33 @@ int main() {
 	dyn_state.dynamicStateCount = std::extent<decltype(dyn_states)>::value;
 	dyn_state.pDynamicStates = dyn_states;
 
+	VkGraphicsPipelineCreateInfo pipeline_info{};
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = 2;
+	pipeline_info.pStages = shaders;
+	pipeline_info.pVertexInputState = &vertex_input;
+	pipeline_info.pInputAssemblyState = &input_assembly;
+	pipeline_info.pViewportState = &viewport;
+	pipeline_info.pRasterizationState = &rasterizer;
+	pipeline_info.pMultisampleState = &multisampling;
+	pipeline_info.pColorBlendState = &blending;
+	pipeline_info.pDynamicState = &dyn_state;
+	pipeline_info.layout = layout;
+	pipeline_info.renderPass = rpass;
+	pipeline_info.subpass = 0;
+
+	VkPipeline pipeline;
+	if (vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_info, nullptr, &pipeline) != VK_SUCCESS)
+		throw std::runtime_error("Could not create pipeline!");
+
 	// Choose swapchain settings
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
 	}
 
+	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, layout, nullptr);
+	vkDestroyRenderPass(device, rpass, nullptr);
 
 	vkDestroyShaderModule(device, vs, nullptr);
 	vkDestroyShaderModule(device, fs, nullptr);
