@@ -4,6 +4,7 @@
 #include "vk_queue.hpp"
 #include "vk_swapchain.hpp"
 #include "vk_image.hpp"
+#include "vk_shader.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -56,35 +57,6 @@ struct GWindow {
 	}
 };
 
-std::vector<char> read_bytes(const char* filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open()) throw std::runtime_error("Could not open file!");
-
-	size_t byte_ct = file.tellg();
-	std::vector<char> buffer(byte_ct);
-
-	file.seekg(0);
-	file.read(buffer.data(), byte_ct);
-
-	file.close();
-
-	return buffer;
-}
-
-VkShaderModule create_shader(VkDevice device, const std::vector<char>& bytes) {
-	VkShaderModuleCreateInfo info{};
-	info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	info.codeSize = bytes.size();
-	info.pCode = reinterpret_cast<const uint32_t*>(bytes.data());
-
-	VkShaderModule shader;
-	if (vkCreateShaderModule(device, &info, nullptr, &shader) != VK_SUCCESS)
-		throw std::runtime_error("Could not create shader module!");
-
-	return shader;
-}
-
 int main() {
 	auto glfw_window = GWindow(INIT_WIDTH, INIT_HEIGHT);
 
@@ -123,27 +95,10 @@ int main() {
 						 VK_NULL_HANDLE, queue_fams.unique.size(), queue_fams.unique.data(),
 						 wwidth, wheight);
 
-	// Load shaders
-	auto vs_bytes = read_bytes("../shader.vert.spv");
-	auto fs_bytes = read_bytes("../shader.frag.spv");
-	std::cout << vs_bytes.size() << " bytes in vertex shader" << std::endl;
+	auto vs = vk_shader::Shader(device, VK_SHADER_STAGE_VERTEX_BIT, "../shader.vert.spv");
+	auto fs = vk_shader::Shader(device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shader.frag.spv");
 
-	auto vs = create_shader(device, vs_bytes);
-	auto fs = create_shader(device, fs_bytes);
-
-	VkPipelineShaderStageCreateInfo vs_info{};
-	vs_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vs_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vs_info.module = vs;
-	vs_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo fs_info{};
-	fs_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fs_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fs_info.module = fs;
-	fs_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo shaders[] = {vs_info, fs_info};
+	VkPipelineShaderStageCreateInfo shaders[] = {vs.info, fs.info};
 
 	// Create render pass
 	VkAttachmentDescription color_attach{};
@@ -259,8 +214,8 @@ int main() {
 	vkDestroyPipelineLayout(device, layout, nullptr);
 	vkDestroyRenderPass(device, rpass, nullptr);
 
-	vkDestroyShaderModule(device, vs, nullptr);
-	vkDestroyShaderModule(device, fs, nullptr);
+	vs.destroy(device);
+	fs.destroy(device);
 
 	swapchain.destroy();
 
