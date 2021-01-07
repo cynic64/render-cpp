@@ -30,6 +30,7 @@ add_library(VkDevice vk_device.cpp)
 add_library(VkSwapchain vk_swapchain.cpp)
 add_library(VkImage vk_image.cpp)
 add_library(VkShader vk_shader.cpp)
+add_library(VkRpass vk_rpass.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -44,4 +45,5 @@ target_link_libraries(Testing VkDevice)
 target_link_libraries(Testing VkSwapchain)
 target_link_libraries(Testing VkImage)
 target_link_libraries(Testing VkShader)
+target_link_libraries(Testing VkRpass)
 

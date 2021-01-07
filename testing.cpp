@@ -5,6 +5,7 @@
 #include "vk_swapchain.hpp"
 #include "vk_image.hpp"
 #include "vk_shader.hpp"
+#include "vk_rpass.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -101,35 +102,10 @@ int main() {
 	VkPipelineShaderStageCreateInfo shaders[] = {vs.info, fs.info};
 
 	// Create render pass
-	VkAttachmentDescription color_attach{};
-	color_attach.format = swapchain.format;
-	color_attach.samples = VK_SAMPLE_COUNT_1_BIT;
-	color_attach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	color_attach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	color_attach.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	color_attach.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	color_attach.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	color_attach.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	VkAttachmentReference color_attach_ref{};
-	color_attach_ref.attachment = 0;
-	color_attach_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &color_attach_ref;
-
-	VkRenderPassCreateInfo rpass_info{};
-	rpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	rpass_info.attachmentCount = 1;
-	rpass_info.pAttachments = &color_attach;
-	rpass_info.subpassCount = 1;
-	rpass_info.pSubpasses = &subpass;
-
-	VkRenderPass rpass;
-	if (vkCreateRenderPass(device, &rpass_info, nullptr, &rpass) != VK_SUCCESS)
-		throw std::runtime_error("Could not create render pass!");
+	auto color_attachment = vk_rpass::attachment(swapchain.format);
+	auto color_ref = vk_rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	auto subpass = vk_rpass::subpass(1, &color_ref);
+	auto rpass = vk_rpass::rpass(device, 1, &color_attachment, 1, &subpass);
 
 	// Create pipeline layout
 	VkPipelineLayoutCreateInfo layout_info{};

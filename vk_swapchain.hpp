@@ -13,7 +13,7 @@ namespace vk_swapchain {
 		uint32_t image_ct_pref;
 	};
 
-	const SwapchainSettings DEFAULT_SWAPCHAIN {
+	const SwapchainSettings SWAPCHAIN_DEFAULTS {
 		VK_FORMAT_B8G8R8A8_SRGB,
 		VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 		VK_PRESENT_MODE_MAILBOX_KHR,
@@ -44,7 +44,7 @@ namespace vk_swapchain {
 			  VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
 			  uint32_t queue_fam_ct, uint32_t* queue_fams,
 			  uint32_t window_width, uint32_t window_height,
-			  SwapchainSettings const& settings = DEFAULT_SWAPCHAIN);
+			  SwapchainSettings const& settings = SWAPCHAIN_DEFAULTS);
 
 		void destroy();
 
