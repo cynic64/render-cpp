@@ -33,6 +33,16 @@ namespace vk_rpass {
 		VK_PIPELINE_BIND_POINT_GRAPHICS
 	};
 
+	const VkSubpassDependency DEPENDENCY_DEFAULTS {
+		VK_SUBPASS_EXTERNAL, // srcSubpass 
+		0, // dstSubpass 
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask 
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask 
+		0, // srcAccessMask 
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // dstAccessMask 
+		0 // dependencyFlags
+	};
+
 	VkAttachmentDescription attachment(VkFormat format,
 					   AttachmentSettings settings = ATTACHMENT_DEFAULTS);
 
@@ -41,9 +51,12 @@ namespace vk_rpass {
 	VkSubpassDescription subpass(uint32_t color_ref_ct, VkAttachmentReference* color_refs,
 				     SubpassSettings settings = SUBPASS_DEFAULTS);
 
+	VkSubpassDependency dependency(VkSubpassDependency settings = DEPENDENCY_DEFAULTS);
+
 	VkRenderPass rpass(VkDevice device,
 			   uint32_t attachment_ct, VkAttachmentDescription* attachments,
-			   uint32_t subpass_ct, VkSubpassDescription* subpasses);
+			   uint32_t subpass_ct, VkSubpassDescription* subpasses,
+			   uint32_t dependecy_ct, VkSubpassDependency* dependencies);
 }
 
 #endif // VK_RPASS_H_

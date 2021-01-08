@@ -82,14 +82,20 @@ int main() {
 		throw std::runtime_error("Unable to find necessary queue families!");
 
 	// Create logical device
-	VkDevice device;
-
 	// Necessary because the device has to support all our different queue
 	// families
 	auto dev_queue_infos = vk_device::default_queue_infos(queue_fams.unique.begin(), queue_fams.unique.end());
 
+	VkDevice device;
 	std::vector<const char *> dev_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 	vk_device::create(phys_dev, dev_queue_infos, {}, dev_extensions, &device);
+
+	// Retrieve queues
+	VkQueue queue_graphics, queue_present;
+	vkGetDeviceQueue(device, queue_fams.graphics.value(), 0, &queue_graphics);
+	if (queue_fams.present.value() != queue_fams.graphics.value())
+		vkGetDeviceQueue(device, queue_fams.present.value(), 0, &queue_present);
+	else queue_present = queue_graphics;
 
 	// Create swapchain
 	auto [wwidth, wheight] = glfw_window.get_dims();
@@ -106,16 +112,146 @@ int main() {
 	auto color_attachment = vk_rpass::attachment(swapchain.format);
 	auto color_ref = vk_rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	auto subpass = vk_rpass::subpass(1, &color_ref);
-	auto rpass = vk_rpass::rpass(device, 1, &color_attachment, 1, &subpass);
+	auto subpass_dep = vk_rpass::dependency();
+	auto rpass = vk_rpass::rpass(device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
 
 	// Create pipeline
 	auto pipeline_lt = vk_pipeline::layout(device);
 	auto pipeline = vk_pipeline::pipeline(device, 2, shaders, pipeline_lt, rpass);
 
-	// Choose swapchain settings
+	// Create framebuffers
+	std::vector<VkFramebuffer> fbs(swapchain.images.size());
+	for (size_t i = 0; i < swapchain.images.size(); ++i) {
+		auto view = swapchain.image_views[i];
+
+		VkFramebufferCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		info.renderPass = rpass;
+		info.attachmentCount = 1;
+		info.pAttachments = &view;
+		info.width = swapchain.width;
+		info.height = swapchain.height;
+		info.layers = 1;
+
+		if (vkCreateFramebuffer(device, &info, nullptr, &fbs[i]) != VK_SUCCESS)
+			throw std::runtime_error("Could not create framebuffer!");
+	}
+
+	// Allocate command buffer
+	VkCommandPoolCreateInfo cpool_info{};
+	cpool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cpool_info.queueFamilyIndex = queue_fams.graphics.value();
+	cpool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	VkCommandPool cpool;
+	if (vkCreateCommandPool(device, &cpool_info, nullptr, &cpool) != VK_SUCCESS)
+		throw std::runtime_error("Could not create command pool!");
+
+	VkCommandBufferAllocateInfo cbuf_info{};
+	cbuf_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cbuf_info.commandPool = cpool;
+	cbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cbuf_info.commandBufferCount = 1;
+
+	VkCommandBuffer cbuf;
+	if (vkAllocateCommandBuffers(device, &cbuf_info, &cbuf) != VK_SUCCESS)
+		throw std::runtime_error("Could not allocate command buffer!");
+
+	// Dynamic state
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = swapchain.width;
+	viewport.height = swapchain.width;
+	viewport.minDepth = 0.0f;
+	viewport.minDepth = 1.0f;
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent.width = swapchain.width;
+	scissor.extent.height = swapchain.width;
+
+	// Synchronization
+	VkSemaphore image_avail_sem, render_done_sem;
+	VkSemaphoreCreateInfo sem_info{};
+	sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	if (vkCreateSemaphore(device, &sem_info, nullptr, &image_avail_sem) != VK_SUCCESS
+	    || vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sem) != VK_SUCCESS)
+		throw std::runtime_error("Could not create semaphores!");
+
+	// Main loop
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
+
+		uint32_t image_idx = 0;
+		vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX,
+				      image_avail_sem, VK_NULL_HANDLE, &image_idx);
+
+		VkCommandBufferBeginInfo cbuf_begin{};
+		cbuf_begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cbuf_begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		if (vkBeginCommandBuffer(cbuf, &cbuf_begin) != VK_SUCCESS)
+			throw std::runtime_error("Could not begin command buffer!");
+
+		VkRenderPassBeginInfo cbuf_rpass_info{};
+		cbuf_rpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		cbuf_rpass_info.renderPass = rpass;
+		cbuf_rpass_info.framebuffer = fbs[image_idx];
+		cbuf_rpass_info.renderArea.offset = {0, 0};
+		cbuf_rpass_info.renderArea.extent.width = swapchain.width;
+		cbuf_rpass_info.renderArea.extent.height = swapchain.height;
+		VkClearValue clear_val = {0.0f, 0.0f, 0.0f, 0.0f};
+		cbuf_rpass_info.clearValueCount = 1;
+		cbuf_rpass_info.pClearValues = &clear_val;
+		vkCmdBeginRenderPass(cbuf, &cbuf_rpass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		vkCmdSetViewport(cbuf, 0, 1, &viewport);
+		vkCmdSetScissor(cbuf, 0, 1, &scissor);
+
+		vkCmdDraw(cbuf, 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(cbuf);
+		if (vkEndCommandBuffer(cbuf) != VK_SUCCESS)
+			throw std::runtime_error("Could not end command buffer!");
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		submit_info.waitSemaphoreCount = 1;
+		submit_info.pWaitSemaphores = &image_avail_sem;
+		submit_info.pWaitDstStageMask = &wait_stage;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &cbuf;
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = &render_done_sem;
+
+		if (vkQueueSubmit(queue_graphics, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+			throw std::runtime_error("Could not submit!");
+
+		VkPresentInfoKHR present_info{};
+		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores = &render_done_sem;
+		present_info.swapchainCount = 1;
+		present_info.pSwapchains = &swapchain.swapchain;
+		present_info.pImageIndices = &image_idx;
+		vkQueuePresentKHR(queue_present, &present_info);
+
+		vkQueueWaitIdle(queue_graphics);
+		vkQueueWaitIdle(queue_present);
+
+		vkResetCommandBuffer(cbuf, 0);
 	}
+
+	// Cleanup
+	vkDestroySemaphore(device, image_avail_sem, nullptr);
+	vkDestroySemaphore(device, render_done_sem, nullptr);
+
+	vkDestroyCommandPool(device, cpool, nullptr);
 
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipeline_lt, nullptr);
@@ -123,6 +259,8 @@ int main() {
 
 	vs.destroy(device);
 	fs.destroy(device);
+
+	for (auto& i : fbs) vkDestroyFramebuffer(device, i, nullptr);
 
 	swapchain.destroy();
 
