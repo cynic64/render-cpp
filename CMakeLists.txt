@@ -32,6 +32,7 @@ add_library(VkImage vk_image.cpp)
 add_library(VkShader vk_shader.cpp)
 add_library(VkRpass vk_rpass.cpp)
 add_library(VkPipeline vk_pipeline.cpp)
+add_library(VkCbuf vk_cbuf.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -48,4 +49,5 @@ target_link_libraries(Testing VkImage)
 target_link_libraries(Testing VkShader)
 target_link_libraries(Testing VkRpass)
 target_link_libraries(Testing VkPipeline)
+target_link_libraries(Testing VkCbuf)
 

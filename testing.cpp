@@ -7,6 +7,7 @@
 #include "vk_shader.hpp"
 #include "vk_rpass.hpp"
 #include "vk_pipeline.hpp"
+#include "vk_cbuf.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -18,6 +19,7 @@
 #include <algorithm>
 #include <fstream>
 #include <type_traits>
+#include <chrono>
 
 const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
@@ -187,35 +189,13 @@ int main() {
 		vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX,
 				      image_avail_sem, VK_NULL_HANDLE, &image_idx);
 
-		VkCommandBufferBeginInfo cbuf_begin{};
-		cbuf_begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cbuf_begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		if (vkBeginCommandBuffer(cbuf, &cbuf_begin) != VK_SUCCESS)
-			throw std::runtime_error("Could not begin command buffer!");
-
-		VkRenderPassBeginInfo cbuf_rpass_info{};
-		cbuf_rpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		cbuf_rpass_info.renderPass = rpass;
-		cbuf_rpass_info.framebuffer = fbs[image_idx];
-		cbuf_rpass_info.renderArea.offset = {0, 0};
-		cbuf_rpass_info.renderArea.extent.width = swapchain.width;
-		cbuf_rpass_info.renderArea.extent.height = swapchain.height;
-		VkClearValue clear_val = {0.0f, 0.0f, 0.0f, 0.0f};
-		cbuf_rpass_info.clearValueCount = 1;
-		cbuf_rpass_info.pClearValues = &clear_val;
-		vkCmdBeginRenderPass(cbuf, &cbuf_rpass_info, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-		vkCmdSetViewport(cbuf, 0, 1, &viewport);
-		vkCmdSetScissor(cbuf, 0, 1, &scissor);
-
-		vkCmdDraw(cbuf, 3, 1, 0, 0);
-
-		vkCmdEndRenderPass(cbuf);
-		if (vkEndCommandBuffer(cbuf) != VK_SUCCESS)
-			throw std::runtime_error("Could not end command buffer!");
+		vk_cbuf::begin(cbuf);
+		vk_cbuf::begin_rpass(cbuf, rpass, fbs[image_idx], swapchain.width, swapchain.height);
+		vk_cbuf::bind_pipeline(cbuf, pipeline);
+		vk_cbuf::set_viewport(cbuf, {viewport});
+		vk_cbuf::set_scissor(cbuf, {scissor});
+		vk_cbuf::draw(cbuf, 3);
+		vk_cbuf::end_rpass(cbuf);
 
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
