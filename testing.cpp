@@ -8,6 +8,7 @@
 #include "vk_rpass.hpp"
 #include "vk_pipeline.hpp"
 #include "vk_cbuf.hpp"
+#include "timer.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -181,6 +182,9 @@ int main() {
 	    || vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sem) != VK_SUCCESS)
 		throw std::runtime_error("Could not create semaphores!");
 
+	timer::Timer timer;
+	auto frame_ct = 0;
+
 	// Main loop
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
@@ -225,7 +229,11 @@ int main() {
 		vkQueueWaitIdle(queue_present);
 
 		vkResetCommandBuffer(cbuf, 0);
+
+		frame_ct++;
 	}
+
+	timer.print_fps(frame_ct);
 
 	// Cleanup
 	vkDestroySemaphore(device, image_avail_sem, nullptr);
