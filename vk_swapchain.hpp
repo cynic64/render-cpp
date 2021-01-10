@@ -47,6 +47,8 @@ namespace vk_swapchain {
 			  uint32_t window_width, uint32_t window_height,
 			  SwapchainSettings const& settings = SWAPCHAIN_DEFAULTS);
 
+		Swapchain() : swapchain(VK_NULL_HANDLE) {}
+
 		void destroy();
 
 	private:

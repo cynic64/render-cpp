@@ -24,11 +24,15 @@
 
 const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
+const auto CBUF_CT = 4;
+
 #ifdef NDEBUG
 const bool VALIDATION_ENABLED = false;
 #else
 const bool VALIDATION_ENABLED = true;
 #endif
+
+bool must_recreate = false;
 
 struct GWindow {
 	GLFWwindow* window;
@@ -62,8 +66,13 @@ struct GWindow {
 	}
 };
 
+void resize_callback(GLFWwindow* window, int width, int height) {
+	must_recreate = true;
+}
+
 int main() {
 	auto glfw_window = GWindow(INIT_WIDTH, INIT_HEIGHT);
+	glfwSetFramebufferSizeCallback(glfw_window.window, resize_callback);
 
 	VkInstance instance;
 	// Will only actually be set if validation is enabled
@@ -101,49 +110,15 @@ int main() {
 		vkGetDeviceQueue(device, queue_fams.present.value(), 0, &queue_present);
 	else queue_present = queue_graphics;
 
-	// Create swapchain
-	auto [wwidth, wheight] = glfw_window.get_dims();
-	auto swapchain = vk_swapchain::Swapchain(phys_dev, device, surface,
-						 VK_NULL_HANDLE, queue_fams.unique.size(), queue_fams.unique.data(),
-						 wwidth, wheight);
-
+	// Load shaders
 	auto vs = vk_shader::Shader(device, VK_SHADER_STAGE_VERTEX_BIT, "../shader.vert.spv");
 	auto fs = vk_shader::Shader(device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shader.frag.spv");
 
 	VkPipelineShaderStageCreateInfo shaders[] = {vs.info, fs.info};
 
-	// Create render pass
-	auto color_attachment = vk_rpass::attachment(swapchain.format);
-	auto color_ref = vk_rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	auto subpass = vk_rpass::subpass(1, &color_ref);
-	auto subpass_dep = vk_rpass::dependency();
-	auto rpass = vk_rpass::rpass(device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
-
-	// Create pipeline
 	auto pipeline_lt = vk_pipeline::layout(device);
-	auto pipeline = vk_pipeline::pipeline(device, 2, shaders, pipeline_lt, rpass);
-
-	// Create framebuffers
-	std::vector<VkFramebuffer> fbs(swapchain.images.size());
-	for (size_t i = 0; i < swapchain.images.size(); ++i) {
-		auto view = swapchain.image_views[i];
-
-		VkFramebufferCreateInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		info.renderPass = rpass;
-		info.attachmentCount = 1;
-		info.pAttachments = &view;
-		info.width = swapchain.width;
-		info.height = swapchain.height;
-		info.layers = 1;
-
-		if (vkCreateFramebuffer(device, &info, nullptr, &fbs[i]) != VK_SUCCESS)
-			throw std::runtime_error("Could not create framebuffer!");
-	}
 
 	// Allocate command buffer
-	auto cbuf_ct = swapchain.images.size() + 1;
-
 	VkCommandPoolCreateInfo cpool_info{};
 	cpool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	cpool_info.queueFamilyIndex = queue_fams.graphics.value();
@@ -157,29 +132,25 @@ int main() {
 	cbuf_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cbuf_info.commandPool = cpool;
 	cbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbuf_info.commandBufferCount = cbuf_ct;
+	cbuf_info.commandBufferCount = CBUF_CT;
 
-	std::vector<VkCommandBuffer> cbufs(cbuf_ct);
+	std::vector<VkCommandBuffer> cbufs(CBUF_CT);
 	if (vkAllocateCommandBuffers(device, &cbuf_info, cbufs.data()) != VK_SUCCESS)
 		throw std::runtime_error("Could not allocate command buffer!");
 
-	// Dynamic state
+	// Dynamic state (other fields will be filled in later)
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = swapchain.width;
-	viewport.height = swapchain.width;
 	viewport.minDepth = 0.0f;
 	viewport.minDepth = 1.0f;
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent.width = swapchain.width;
-	scissor.extent.height = swapchain.width;
 
 	// Synchronization
-	std::vector<VkSemaphore> image_avail_sems(cbuf_ct), render_done_sems(cbuf_ct);
-	std::vector<VkFence> render_done_fences(cbuf_ct);
+	std::vector<VkSemaphore> image_avail_sems(CBUF_CT), render_done_sems(CBUF_CT);
+	std::vector<VkFence> render_done_fences(CBUF_CT);
 
 	VkSemaphoreCreateInfo sem_info{};
 	sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -188,22 +159,100 @@ int main() {
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (size_t i = 0; i < cbuf_ct; ++i) {
+	for (size_t i = 0; i < CBUF_CT; ++i) {
 		vkCreateSemaphore(device, &sem_info, nullptr, &image_avail_sems[i]);
 		vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sems[i]);
 		vkCreateFence(device, &fence_info, nullptr, &render_done_fences[i]);
 	}
 
-	std::vector<VkFence> image_fences(swapchain.images.size(), VK_NULL_HANDLE);
+	// Everything from here on depends on the swapchain, so we make them
+	// null for now
+	vk_swapchain::Swapchain swapchain;
+	VkRenderPass rpass = VK_NULL_HANDLE;
+	VkPipeline pipeline = VK_NULL_HANDLE;
+	std::vector<VkFramebuffer> fbs;
+	std::vector<VkFence> image_fences;
 
 	auto sync_set_idx = 0;
 
 	// Main loop
 	timer::Timer timer;
 	size_t frame_ct = 0;
+	must_recreate = true;
 
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
+
+		while (must_recreate) {
+			vkDeviceWaitIdle(device);
+			// Clean up old stuff
+			if (swapchain.swapchain != VK_NULL_HANDLE) swapchain.destroy();
+
+			// Create swapchain
+			auto [wwidth, wheight] = glfw_window.get_dims();
+			swapchain = vk_swapchain::Swapchain(phys_dev, device, surface,
+							    VK_NULL_HANDLE,
+							    queue_fams.unique.size(), queue_fams.unique.data(),
+							    wwidth, wheight);
+			auto [newwidth, newwheight] = glfw_window.get_dims();
+			if (newwidth != wwidth || newwheight != wheight) continue;
+
+			if (rpass != VK_NULL_HANDLE) vkDestroyRenderPass(device, rpass, nullptr);
+			if (pipeline != VK_NULL_HANDLE) vkDestroyPipeline(device, pipeline, nullptr);
+			if (!fbs.empty()) for (auto& i : fbs) vkDestroyFramebuffer(device, i, nullptr);
+
+			// Create render pass
+			auto color_attachment = vk_rpass::attachment(swapchain.format);
+			auto color_ref = vk_rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			auto subpass = vk_rpass::subpass(1, &color_ref);
+			auto subpass_dep = vk_rpass::dependency();
+			rpass = vk_rpass::rpass(device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
+
+			// Create pipeline
+			pipeline = vk_pipeline::pipeline(device, 2, shaders, pipeline_lt, rpass);
+
+			// Create framebuffers
+			fbs.resize(swapchain.images.size());
+			for (size_t i = 0; i < swapchain.images.size(); ++i) {
+				auto view = swapchain.image_views[i];
+				
+				VkFramebufferCreateInfo info{};
+				info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				info.renderPass = rpass;
+				info.attachmentCount = 1;
+				info.pAttachments = &view;
+				info.width = swapchain.width;
+				info.height = swapchain.height;
+				info.layers = 1;
+				
+				if (vkCreateFramebuffer(device, &info, nullptr, &fbs[i]) != VK_SUCCESS)
+					throw std::runtime_error("Could not create framebuffer!");
+			}
+
+			// Clear image fences
+			image_fences.clear();
+			image_fences.resize(swapchain.images.size(), VK_NULL_HANDLE);
+
+			// Recreate fences and semaphores
+			for (size_t i = 0; i < CBUF_CT; ++i) {
+				vkDestroySemaphore(device, image_avail_sems[i], nullptr);
+				vkDestroySemaphore(device, render_done_sems[i], nullptr);
+				vkDestroyFence(device, render_done_fences[i], nullptr);
+
+				vkCreateSemaphore(device, &sem_info, nullptr, &image_avail_sems[i]);
+				vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sems[i]);
+				vkCreateFence(device, &fence_info, nullptr, &render_done_fences[i]);
+			}
+
+
+			// Update dynamic state
+			viewport.width = swapchain.width;
+			viewport.height = swapchain.width;
+			scissor.extent.width = swapchain.width;
+			scissor.extent.height = swapchain.width;
+
+			must_recreate = false;
+		}
 
 		// Wait for the sync set we'll use to become available
 		if (vkWaitForFences(device, 1, &render_done_fences[sync_set_idx], VK_TRUE, UINT64_MAX) != VK_SUCCESS)
@@ -213,15 +262,17 @@ int main() {
 		vkResetCommandBuffer(cbuf, 0);
 
 		uint32_t image_idx = 0;
-		vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX,
-				      image_avail_sems[sync_set_idx], VK_NULL_HANDLE, &image_idx);
+		if (vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX,
+				      image_avail_sems[sync_set_idx], VK_NULL_HANDLE, &image_idx)
+		    != VK_SUCCESS) {
+			must_recreate = true;
+			continue;
+		}
 
 		// Wait for whoever's drawing to our image to finish
-		if (image_fences[image_idx] != VK_NULL_HANDLE) {
+		if (image_fences[image_idx] != VK_NULL_HANDLE)
 			if (vkWaitForFences(device, 1, &image_fences[image_idx], VK_TRUE, UINT64_MAX) != VK_SUCCESS)
 				throw std::runtime_error("Could not wait for image's fence!");
-		} else if (frame_ct > swapchain.images.size())
-			throw std::runtime_error("What the hell, image fences are still null on a late frame!");
 
 		if (vkResetFences(device, 1, &render_done_fences[sync_set_idx]) != VK_SUCCESS)
 			throw std::runtime_error("Could not reset render-done fence!");
@@ -249,6 +300,8 @@ int main() {
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &render_done_sems[sync_set_idx];
 
+		if (must_recreate) continue;
+
 		if (vkQueueSubmit(queue_graphics, 1, &submit_info, render_done_fences[sync_set_idx]) != VK_SUCCESS)
 			throw std::runtime_error("Could not submit!");
 
@@ -259,10 +312,17 @@ int main() {
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = &swapchain.swapchain;
 		present_info.pImageIndices = &image_idx;
-		vkQueuePresentKHR(queue_present, &present_info);
+
+		if (must_recreate) continue;
+
+		auto res = vkQueuePresentKHR(queue_present, &present_info);
+		if (res == VK_ERROR_OUT_OF_DATE_KHR) {
+			must_recreate = true;
+		} else if (res != VK_SUCCESS)
+			throw std::runtime_error("Presenting failed with something other than out-of-date!");
 
 		frame_ct++;
-		sync_set_idx = (sync_set_idx+1)%cbuf_ct;
+		sync_set_idx = (sync_set_idx+1)%CBUF_CT;
 	}
 
 	timer.print_fps(frame_ct);
@@ -271,7 +331,7 @@ int main() {
 	vkQueueWaitIdle(queue_present);
 
 	// Cleanup
-	for (size_t i = 0; i < cbuf_ct; ++i) {
+	for (size_t i = 0; i < CBUF_CT; ++i) {
 		vkDestroySemaphore(device, image_avail_sems[i], nullptr);
 		vkDestroySemaphore(device, render_done_sems[i], nullptr);
 		vkDestroyFence(device, render_done_fences[i], nullptr);
