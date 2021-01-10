@@ -43,10 +43,12 @@ namespace vk_swapchain {
 			chosen_color_space = settings.color_space_pref;
 		else chosen_color_space = formats[0].colorSpace;
 
-		if (std::find(present_modes.begin(), present_modes.end(), settings.present_mode_pref)
-		    != present_modes.end())
-			chosen_present_mode = settings.present_mode_pref;
-		else chosen_present_mode = present_modes[0];
+		chosen_present_mode = present_modes[0];
+		for (auto p : settings.present_mode_pref)
+			if (std::find(present_modes.begin(), present_modes.end(), p) != present_modes.end()) {
+				chosen_present_mode = p;
+				break;
+			}
 
 		uint32_t chosen_image_ct = std::clamp(settings.image_ct_pref,
 						      surface_caps.minImageCount, surface_caps.maxImageCount);

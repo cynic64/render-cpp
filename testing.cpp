@@ -72,7 +72,8 @@ int main() {
 
 	// Create surface
 	VkSurfaceKHR surface;
-	if (glfwCreateWindowSurface(instance, glfw_window.window, nullptr, &surface) != VK_SUCCESS) throw std::runtime_error("Could not create surface!");
+	if (glfwCreateWindowSurface(instance, glfw_window.window, nullptr, &surface) != VK_SUCCESS)
+		throw std::runtime_error("Could not create surface!");
 
 	// Create physical device
 	VkPhysicalDevice phys_dev;
@@ -141,6 +142,8 @@ int main() {
 	}
 
 	// Allocate command buffer
+	auto cbuf_ct = swapchain.images.size() + 1;
+
 	VkCommandPoolCreateInfo cpool_info{};
 	cpool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	cpool_info.queueFamilyIndex = queue_fams.graphics.value();
@@ -154,10 +157,10 @@ int main() {
 	cbuf_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cbuf_info.commandPool = cpool;
 	cbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbuf_info.commandBufferCount = 1;
+	cbuf_info.commandBufferCount = cbuf_ct;
 
-	VkCommandBuffer cbuf;
-	if (vkAllocateCommandBuffers(device, &cbuf_info, &cbuf) != VK_SUCCESS)
+	std::vector<VkCommandBuffer> cbufs(cbuf_ct);
+	if (vkAllocateCommandBuffers(device, &cbuf_info, cbufs.data()) != VK_SUCCESS)
 		throw std::runtime_error("Could not allocate command buffer!");
 
 	// Dynamic state
@@ -175,23 +178,56 @@ int main() {
 	scissor.extent.height = swapchain.width;
 
 	// Synchronization
-	VkSemaphore image_avail_sem, render_done_sem;
+	std::vector<VkSemaphore> image_avail_sems(cbuf_ct), render_done_sems(cbuf_ct);
+	std::vector<VkFence> render_done_fences(cbuf_ct);
+
 	VkSemaphoreCreateInfo sem_info{};
 	sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	if (vkCreateSemaphore(device, &sem_info, nullptr, &image_avail_sem) != VK_SUCCESS
-	    || vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sem) != VK_SUCCESS)
-		throw std::runtime_error("Could not create semaphores!");
 
-	timer::Timer timer;
-	auto frame_ct = 0;
+	VkFenceCreateInfo fence_info{};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < cbuf_ct; ++i) {
+		vkCreateSemaphore(device, &sem_info, nullptr, &image_avail_sems[i]);
+		vkCreateSemaphore(device, &sem_info, nullptr, &render_done_sems[i]);
+		vkCreateFence(device, &fence_info, nullptr, &render_done_fences[i]);
+	}
+
+	std::vector<VkFence> image_fences(swapchain.images.size(), VK_NULL_HANDLE);
+
+	auto sync_set_idx = 0;
 
 	// Main loop
+	timer::Timer timer;
+	size_t frame_ct = 0;
+
 	while (!glfwWindowShouldClose(glfw_window.window)) {
 		glfwPollEvents();
 
+		// Wait for the sync set we'll use to become available
+		if (vkWaitForFences(device, 1, &render_done_fences[sync_set_idx], VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+			throw std::runtime_error("Could not wait for sync set's render-done fence!");
+
+		auto cbuf = cbufs[sync_set_idx];
+		vkResetCommandBuffer(cbuf, 0);
+
 		uint32_t image_idx = 0;
 		vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX,
-				      image_avail_sem, VK_NULL_HANDLE, &image_idx);
+				      image_avail_sems[sync_set_idx], VK_NULL_HANDLE, &image_idx);
+
+		// Wait for whoever's drawing to our image to finish
+		if (image_fences[image_idx] != VK_NULL_HANDLE) {
+			if (vkWaitForFences(device, 1, &image_fences[image_idx], VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+				throw std::runtime_error("Could not wait for image's fence!");
+		} else if (frame_ct > swapchain.images.size())
+			throw std::runtime_error("What the hell, image fences are still null on a late frame!");
+
+		if (vkResetFences(device, 1, &render_done_fences[sync_set_idx]) != VK_SUCCESS)
+			throw std::runtime_error("Could not reset render-done fence!");
+
+		// We're now rendering to this image, so mark it with our fence
+		image_fences[image_idx] = render_done_fences[sync_set_idx];
 
 		vk_cbuf::begin(cbuf);
 		vk_cbuf::begin_rpass(cbuf, rpass, fbs[image_idx], swapchain.width, swapchain.height);
@@ -206,38 +242,40 @@ int main() {
 
 		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		submit_info.waitSemaphoreCount = 1;
-		submit_info.pWaitSemaphores = &image_avail_sem;
+		submit_info.pWaitSemaphores = &image_avail_sems[sync_set_idx];
 		submit_info.pWaitDstStageMask = &wait_stage;
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &cbuf;
 		submit_info.signalSemaphoreCount = 1;
-		submit_info.pSignalSemaphores = &render_done_sem;
+		submit_info.pSignalSemaphores = &render_done_sems[sync_set_idx];
 
-		if (vkQueueSubmit(queue_graphics, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+		if (vkQueueSubmit(queue_graphics, 1, &submit_info, render_done_fences[sync_set_idx]) != VK_SUCCESS)
 			throw std::runtime_error("Could not submit!");
 
 		VkPresentInfoKHR present_info{};
 		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores = &render_done_sem;
+		present_info.pWaitSemaphores = &render_done_sems[sync_set_idx];
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = &swapchain.swapchain;
 		present_info.pImageIndices = &image_idx;
 		vkQueuePresentKHR(queue_present, &present_info);
 
-		vkQueueWaitIdle(queue_graphics);
-		vkQueueWaitIdle(queue_present);
-
-		vkResetCommandBuffer(cbuf, 0);
-
 		frame_ct++;
+		sync_set_idx = (sync_set_idx+1)%cbuf_ct;
 	}
 
 	timer.print_fps(frame_ct);
 
+	vkQueueWaitIdle(queue_graphics);
+	vkQueueWaitIdle(queue_present);
+
 	// Cleanup
-	vkDestroySemaphore(device, image_avail_sem, nullptr);
-	vkDestroySemaphore(device, render_done_sem, nullptr);
+	for (size_t i = 0; i < cbuf_ct; ++i) {
+		vkDestroySemaphore(device, image_avail_sems[i], nullptr);
+		vkDestroySemaphore(device, render_done_sems[i], nullptr);
+		vkDestroyFence(device, render_done_fences[i], nullptr);
+	}
 
 	vkDestroyCommandPool(device, cpool, nullptr);
 

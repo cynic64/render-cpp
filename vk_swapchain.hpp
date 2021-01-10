@@ -8,7 +8,8 @@ namespace vk_swapchain {
 	struct SwapchainSettings {
 		VkFormat format_pref;
 		VkColorSpaceKHR color_space_pref;
-		VkPresentModeKHR present_mode_pref;
+		// Most prefererred first
+		std::vector<VkPresentModeKHR> present_mode_pref;
 		VkImageUsageFlags image_usage;
 		uint32_t image_ct_pref;
 	};
@@ -16,7 +17,7 @@ namespace vk_swapchain {
 	const SwapchainSettings SWAPCHAIN_DEFAULTS {
 		VK_FORMAT_B8G8R8A8_SRGB,
 		VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-		VK_PRESENT_MODE_MAILBOX_KHR,
+		{VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR},
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		3
 	};
