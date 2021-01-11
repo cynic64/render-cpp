@@ -9,8 +9,8 @@
 #include "vk_pipeline.hpp"
 #include "vk_cbuf.hpp"
 #include "timer.hpp"
+#include "glfw_window.hpp"
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
@@ -34,44 +34,12 @@ const bool VALIDATION_ENABLED = true;
 
 bool must_recreate = false;
 
-struct GWindow {
-	GLFWwindow* window;
-
-	// Pointers are valid until GLFW terminates (so until the GWindow is
-	// destroyed)
-	std::vector<const char*> req_instance_exts;
-
-	GWindow(uint32_t width, uint32_t height) {
-		glfwInit();
-	
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
-
-		const char** raw_extensions;
-		uint32_t extension_ct;
-		raw_extensions = glfwGetRequiredInstanceExtensions(&extension_ct);
-		req_instance_exts = {raw_extensions, raw_extensions + extension_ct};
-	}
-
-	std::pair<int, int> get_dims() {
-		std::pair<int, int> dims;
-		glfwGetFramebufferSize(window, &dims.first, &dims.second);
-
-		return dims;
-	}
-
-	~GWindow() {
-		glfwDestroyWindow(window);
-		glfwTerminate();
-	}
-};
-
-void resize_callback(GLFWwindow* window, int width, int height) {
+void resize_callback(GLFWwindow*, int, int) {
 	must_recreate = true;
 }
 
 int main() {
-	auto glfw_window = GWindow(INIT_WIDTH, INIT_HEIGHT);
+	auto glfw_window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
 	glfwSetFramebufferSizeCallback(glfw_window.window, resize_callback);
 
 	VkInstance instance;

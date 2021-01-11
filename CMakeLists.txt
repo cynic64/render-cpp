@@ -33,6 +33,7 @@ add_library(VkShader vk_shader.cpp)
 add_library(VkRpass vk_rpass.cpp)
 add_library(VkPipeline vk_pipeline.cpp)
 add_library(VkCbuf vk_cbuf.cpp)
+add_library(GlfwWindow glfw_window.cpp)
 
 # Add the executable
 add_executable(Testing testing.cpp)
@@ -50,4 +51,5 @@ target_link_libraries(Testing VkShader)
 target_link_libraries(Testing VkRpass)
 target_link_libraries(Testing VkPipeline)
 target_link_libraries(Testing VkCbuf)
+target_link_libraries(Testing GlfwWindow)
 
