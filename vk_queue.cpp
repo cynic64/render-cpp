@@ -4,7 +4,7 @@
 #include <unordered_set>
 
 namespace vk_queue {
-	QueueFamilies::QueueFamilies(VkPhysicalDevice phys_dev, VkSurfaceKHR surface) {
+	QueueFamilies::QueueFamilies(VkPhysicalDevice phys_dev, std::optional<VkSurfaceKHR> surface) {
 		uint32_t queue_fam_ct;
 		vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct,
 							 nullptr);
@@ -16,10 +16,10 @@ namespace vk_queue {
 			if (queue_fams[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 				graphics = i;
 
-                        if (surface) {
+                        if (surface.has_value()) {
 				VkBool32 present_supported;
 				vkGetPhysicalDeviceSurfaceSupportKHR(
-					phys_dev, i, surface, &present_supported);
+					phys_dev, i, surface.value(), &present_supported);
 				if (present_supported)
 					present = i;
                         }
@@ -28,8 +28,8 @@ namespace vk_queue {
 		}
 		
 		std::unordered_set<uint32_t> fam_set;
-		fam_set.insert(graphics.value());
-		fam_set.insert(present.value());
+		if (graphics.has_value()) fam_set.insert(graphics.value());
+		if (present.has_value()) fam_set.insert(present.value());
 
 		unique = std::vector<uint32_t>(fam_set.begin(), fam_set.end());
         }
