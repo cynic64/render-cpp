@@ -5,5 +5,5 @@
 #include <memory>
 
 int main() {
-	[[maybe_unused]] auto base = vk_base::create_base();
+	vk_base::Base b;
 }

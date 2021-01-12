@@ -5,10 +5,7 @@
 #include <tuple>
 
 namespace vk_base {
-	struct Base {
-		VkInstance instance;
-		VkDebugUtilsMessengerEXT debug_msgr;
-	};
+	struct Base;
 
 	// Creates the basics without any extensions or referencing a surface
 	struct Default {
@@ -17,16 +14,18 @@ namespace vk_base {
 		VkPhysicalDevice create_phys_dev(const Base& base);
 	};
 
-	template <typename D = Default, typename... Ts>
-	Base create_base(Ts... args) {
-		D deps(args...);
-		Base base{};
+	struct Base {
+		VkInstance instance;
+		VkDebugUtilsMessengerEXT debug_msgr;
 
-		std::tie(base.instance, base.debug_msgr) = deps.create_instance(base);
-		deps.create_phys_dev(base);
-
-		return base;
-	}
+		template <typename D = Default, typename... Ts>
+		Base() : instance(VK_NULL_HANDLE), debug_msgr(VK_NULL_HANDLE) {
+			D deps;
+			
+			std::tie(instance, debug_msgr) = deps.create_instance(*this);
+			deps.create_phys_dev(*this);
+		}
+	};
 }
 
 #endif // VK_BASE_H
