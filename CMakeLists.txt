@@ -23,6 +23,9 @@ endif()
 # Add libraries
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
+
+add_library(VkBase vk_base.cpp)
+
 add_library(VkInstance vk_instance.cpp)
 add_library(VkPhysDev vk_phys_dev.cpp)
 add_library(VkQueue vk_queue.cpp)
@@ -33,10 +36,12 @@ add_library(VkShader vk_shader.cpp)
 add_library(VkRpass vk_rpass.cpp)
 add_library(VkPipeline vk_pipeline.cpp)
 add_library(VkCbuf vk_cbuf.cpp)
+
 add_library(GlfwWindow glfw_window.cpp)
 
-# Add the executable
+# Add the executables
 add_executable(Testing testing.cpp)
+add_executable(Triangle triangle.cpp)
 
 # Link
 target_link_libraries(Testing glfw)
@@ -52,4 +57,6 @@ target_link_libraries(Testing VkRpass)
 target_link_libraries(Testing VkPipeline)
 target_link_libraries(Testing VkCbuf)
 target_link_libraries(Testing GlfwWindow)
+
+target_link_libraries(Triangle VkBase)
 
