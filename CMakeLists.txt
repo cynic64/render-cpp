@@ -59,4 +59,6 @@ target_link_libraries(Testing VkCbuf)
 target_link_libraries(Testing GlfwWindow)
 
 target_link_libraries(Triangle VkBase)
+target_link_libraries(Triangle VkInstance)
+target_link_libraries(Triangle vulkan)
 

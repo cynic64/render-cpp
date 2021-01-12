@@ -2,24 +2,31 @@
 #define VK_BASE_H
 
 #include <vulkan/vulkan.h>
-#include <functional>
-#include <memory>
+#include <tuple>
 
 namespace vk_base {
-	struct Dependencies {
-		std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance();
+	struct Base {
+		VkInstance instance;
+		VkDebugUtilsMessengerEXT debug_msgr;
 	};
 
-	template <typename D = Dependencies> class VkBase {
-	public:
-		template <typename... Ts>
-		VkBase(Ts... args) : deps(D(args...)) {
-			deps.create_instance();
-		}
+	// Creates the basics without any extensions or referencing a surface
+	struct Default {
+		std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base);
 
-	private:
-		D deps;
+		VkPhysicalDevice create_phys_dev(const Base& base);
 	};
+
+	template <typename D = Default, typename... Ts>
+	Base create_base(Ts... args) {
+		D deps(args...);
+		Base base{};
+
+		std::tie(base.instance, base.debug_msgr) = deps.create_instance(base);
+		deps.create_phys_dev(base);
+
+		return base;
+	}
 }
 
 #endif // VK_BASE_H
