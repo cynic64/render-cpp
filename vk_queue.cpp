@@ -33,4 +33,14 @@ namespace vk_queue {
 
 		unique = std::vector<uint32_t>(fam_set.begin(), fam_set.end());
         }
+
+	Queues::Queues(VkDevice device, QueueFamilies queue_fams) {
+		if (queue_fams.graphics.has_value())
+			vkGetDeviceQueue(device, queue_fams.graphics.value(), 0, &graphics);
+		if (queue_fams.present.has_value()) {
+			if (queue_fams.present.value() == queue_fams.graphics.value())
+				present = graphics;
+			else vkGetDeviceQueue(device, queue_fams.present.value(), 0, &present);
+		}
+	}
 }

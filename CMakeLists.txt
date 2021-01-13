@@ -44,6 +44,7 @@ add_executable(Testing testing.cpp)
 add_executable(Triangle triangle.cpp)
 
 # Link
+target_link_libraries(Testing VkBase)
 target_link_libraries(Testing glfw)
 target_link_libraries(Testing vulkan)
 target_link_libraries(Testing VkInstance)

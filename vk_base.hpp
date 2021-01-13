@@ -11,8 +11,8 @@
 namespace vk_base {
 	struct Base;
 
-	// Creates the basics, does not create a surface. Constructor requires
-	// instance and device extensions
+	// Creates the basics, does not create a surface or a present
+	// queue. Constructor requires instance and device extensions.
 	struct Default {
 		Default(std::vector<const char *> instance_exts, std::vector<const char *> device_exts);
 		std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base);
@@ -20,16 +20,18 @@ namespace vk_base {
 		std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base& base);
 		vk_queue::QueueFamilies create_queue_fams(const Base& base);
 		VkDevice create_device(const Base& base);
+		vk_queue::Queues create_queues(const Base& base);
 	private:
 		std::vector<const char *> instance_exts;
 		std::vector<const char *> device_exts;
 	};
 
-	// Does everything Default does and also creates a surface from a GLFW window
+	// Does everything Default does and also creates a surface from a GLFW window.
 	struct Glfw : Default {
 		Glfw(std::vector<const char *> instance_exts, std::vector<const char *> device_exts,
 		     GLFWwindow* window);
 		VkSurfaceKHR create_surface(const Base& base);
+		vk_queue::QueueFamilies create_queue_fams(const Base& base);
 	private:
 		GLFWwindow* window;
 	};
@@ -42,6 +44,7 @@ namespace vk_base {
 		std::string phys_dev_name;
 		vk_queue::QueueFamilies queue_fams;
 		VkDevice device;
+		vk_queue::Queues queues;
 
 		~Base() {
 			if (surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -64,6 +67,7 @@ namespace vk_base {
 		std::tie(b.phys_dev, b.phys_dev_name) = deps.create_phys_dev(b);
 		b.queue_fams = deps.create_queue_fams(b);
 		b.device = deps.create_device(b);
+		b.queues = deps.create_queues(b);
 
 		return b;
 	}

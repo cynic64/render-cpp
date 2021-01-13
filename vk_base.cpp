@@ -39,17 +39,18 @@ namespace vk_base {
 	}
 
 	vk_queue::QueueFamilies Default::create_queue_fams(const Base& base) {
-		vk_queue::QueueFamilies queue_fams(base.phys_dev);
+		vk_queue::QueueFamilies queue_fams;
+		if (base.surface != VK_NULL_HANDLE) queue_fams = {base.phys_dev, base.surface};
+		else queue_fams = {base.phys_dev};
+
 		if (!queue_fams.graphics.has_value())
 			throw std::runtime_error("Unable to find graphics family!");
 
 		return queue_fams;
 	}
 
-	// Does not enable any extensions.
 	VkDevice Default::create_device(const Base& base) {
-		// Necessary because the device has to support all our different queue
-		// families
+		// The device has to support all our different queue families
 		auto dev_queue_infos = vk_device::default_queue_infos(base.queue_fams.unique.begin(),
 								      base.queue_fams.unique.end());
 
@@ -57,6 +58,10 @@ namespace vk_base {
 		vk_device::create(base.phys_dev, dev_queue_infos, {}, device_exts, &device);
 
 		return device;
+	}
+
+	vk_queue::Queues Default::create_queues(const Base& base) {
+		return vk_queue::Queues(base.device, base.queue_fams);
 	}
 
 	/*
@@ -69,6 +74,15 @@ namespace vk_base {
 		VkSurfaceKHR surface;
 		if (glfwCreateWindowSurface(base.instance, window, nullptr, &surface) != VK_SUCCESS)
 			throw std::runtime_error("Could not create surface!");
+
 		return surface;
+	}
+
+	vk_queue::QueueFamilies Glfw::create_queue_fams(const Base& base) {
+		auto queues =  Default::create_queue_fams(base);
+		if (!queues.present.has_value())
+			throw std::runtime_error("No present queue!");
+
+		return queues;
 	}
 }
