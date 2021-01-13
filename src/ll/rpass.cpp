@@ -1,8 +1,8 @@
-#include "vk_rpass.hpp"
+#include "rpass.hpp"
 
 #include <stdexcept>
 
-namespace vk_rpass {
+namespace ll::rpass {
 	VkAttachmentDescription attachment(VkFormat format,
 					   AttachmentSettings settings) {
 		VkAttachmentDescription info{};

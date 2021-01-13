@@ -1,10 +1,10 @@
-#ifndef VK_SHADER_H
-#define VK_SHADER_H
+#ifndef LL_SHADER_H
+#define LL_SHADER_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_shader {
+namespace ll::shader {
 	class Shader {
 	public:
 		Shader(VkDevice device, VkShaderStageFlagBits stage, std::vector<char> bytes);
@@ -18,4 +18,4 @@ namespace vk_shader {
 	std::vector<char> read_bytes(const char* filename);
 }
 
-#endif // VK_SHADER_H
+#endif // LL_SHADER_H

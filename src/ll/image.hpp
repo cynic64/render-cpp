@@ -1,10 +1,10 @@
-#ifndef VK_IMAGE_H
-#define VK_IMAGE_H
+#ifndef Ll_IMAGE_H
+#define Ll_IMAGE_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_image {
+namespace ll::image {
 	struct ImageViewSettings {
 		VkImageSubresourceRange subresource_range;
 	};
@@ -23,4 +23,4 @@ namespace vk_image {
 			    ImageViewSettings const& settings = IMAGE_VIEW_DEFAULTS);
 }
 
-#endif // VK_IMAGE_H
+#endif // Ll_IMAGE_H

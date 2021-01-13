@@ -1,9 +1,9 @@
-#include "vk_shader.hpp"
+#include "shader.hpp"
 
 #include <fstream>
 #include <stdexcept>
 
-namespace vk_shader {
+namespace ll::shader {
 	std::vector<char> read_bytes(const char* filename) {
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 

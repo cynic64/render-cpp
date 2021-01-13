@@ -1,10 +1,10 @@
-#ifndef VK_CBUF_H
-#define VK_CBUF_H
+#ifndef LL_CBUF_H
+#define LL_CBUF_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_cbuf {
+namespace ll::cbuf {
 	void begin(VkCommandBuffer cbuf, VkCommandBufferUsageFlags flags = 0);
 
 	void begin_rpass(VkCommandBuffer cbuf, VkRenderPass rpass,
@@ -23,4 +23,4 @@ namespace vk_cbuf {
 		  uint32_t instance_ct = 1, uint32_t first_vertex = 0, uint32_t first_instance = 0);
 }
 
-#endif // VK_CBUF_H
+#endif // LL_CBUF_H

@@ -1,9 +1,9 @@
-#include "vk_queue.hpp"
+#include "queue.hpp"
 
 #include <vector>
 #include <unordered_set>
 
-namespace vk_queue {
+namespace ll::queue {
 	QueueFamilies::QueueFamilies(VkPhysicalDevice phys_dev, std::optional<VkSurfaceKHR> surface) {
 		uint32_t queue_fam_ct;
 		vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct,

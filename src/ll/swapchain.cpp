@@ -1,12 +1,12 @@
-#include "vk_swapchain.hpp"
+#include "swapchain.hpp"
 
-#include "vk_image.hpp"
+#include "image.hpp"
 
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
 
-namespace vk_swapchain {
+namespace ll::swapchain {
 	Swapchain::Swapchain(VkPhysicalDevice phys_dev, VkDevice device,
 			     VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
 			     uint32_t queue_fam_ct, uint32_t* queue_fams,
@@ -85,7 +85,7 @@ namespace vk_swapchain {
 		vkGetSwapchainImagesKHR(device, swapchain, &real_image_ct, images.data());
 
 		// Create image views
-		for (auto i : images) image_views.push_back(vk_image::to_view(device, i, chosen_format));
+		for (auto i : images) image_views.push_back(ll::image::to_view(device, i, chosen_format));
 
 		format = chosen_format;
 		color_space = chosen_color_space;

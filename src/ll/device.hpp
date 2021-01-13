@@ -1,11 +1,11 @@
-#ifndef VK_DEVICE_H
-#define VK_DEVICE_H
+#ifndef LL_DEVICE_H
+#define LL_DEVICE_H
 
 #include <algorithm>
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace vk_device {
+namespace ll::device {
 	const float DEFAULT_QUEUE_PRIORITY = 1.0f;
 
 	// Req_features is currently unimplemented
@@ -34,4 +34,4 @@ namespace vk_device {
 	}
 }
 
-#endif // VK_DEVICE_H
+#endif // LL_DEVICE_H

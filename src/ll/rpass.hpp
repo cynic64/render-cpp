@@ -1,10 +1,10 @@
-#ifndef VK_RPASS_H_
-#define VK_RPASS_H_
+#ifndef LL_RPASS_H_
+#define LL_RPASS_H_
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_rpass {
+namespace ll::rpass {
 	struct AttachmentSettings {
 		VkSampleCountFlagBits samples;
 		VkAttachmentLoadOp load;
@@ -59,4 +59,4 @@ namespace vk_rpass {
 			   uint32_t dependecy_ct, VkSubpassDependency* dependencies);
 }
 
-#endif // VK_RPASS_H_
+#endif // LL_RPASS_H_

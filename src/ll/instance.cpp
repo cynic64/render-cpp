@@ -1,4 +1,4 @@
-#include "vk_instance.hpp"
+#include "instance.hpp"
 
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace vk_instance {
+namespace ll::instance {
 	// Validation layers and extensions will only be enabled if the user
 	// requests it.
 	const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
@@ -54,13 +54,15 @@ namespace vk_instance {
 
 	VkResult create_debug_msgr(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* info,
 				   VkDebugUtilsMessengerEXT* msgr) {
-		auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
+			vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		if (func) return func(instance, info, nullptr, msgr);
 		else return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
 	void destroy_debug_msgr(VkInstance instance, VkDebugUtilsMessengerEXT debug_msgr) {
-		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
+			vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 		if (func) func(instance, debug_msgr, nullptr);
 		else throw std::runtime_error("Coud not get address of vkDestroyDebugUtilsMessengerEXT!");
 	}

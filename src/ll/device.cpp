@@ -1,8 +1,8 @@
-#include "vk_device.hpp"
+#include "device.hpp"
 #include <stdexcept>
 #include <cstring>
 
-namespace vk_device {
+namespace ll::device {
 	bool check_extension_support(VkPhysicalDevice phys_dev, std::vector<const char *> req_extensions) {
 		uint32_t ext_ct;
 		vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &ext_ct, nullptr);
@@ -38,4 +38,4 @@ namespace vk_device {
 		if (vkCreateDevice(phys_dev, &device_info, nullptr, device) != VK_SUCCESS)
 			throw std::runtime_error("Could not create device!");
 	}
-} // namespace vk_device
+}

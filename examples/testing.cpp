@@ -1,16 +1,16 @@
-#include "vk_base.hpp"
-#include "vk_device.hpp"
-#include "vk_instance.hpp"
-#include "vk_phys_dev.hpp"
-#include "vk_queue.hpp"
-#include "vk_swapchain.hpp"
-#include "vk_image.hpp"
-#include "vk_shader.hpp"
-#include "vk_rpass.hpp"
-#include "vk_pipeline.hpp"
-#include "vk_cbuf.hpp"
-#include "timer.hpp"
-#include "glfw_window.hpp"
+#include "../src/base.hpp"
+#include "../src/ll/device.hpp"
+#include "../src/ll/instance.hpp"
+#include "../src/ll/phys_dev.hpp"
+#include "../src/ll/queue.hpp"
+#include "../src/ll/swapchain.hpp"
+#include "../src/ll/image.hpp"
+#include "../src/ll/shader.hpp"
+#include "../src/ll/rpass.hpp"
+#include "../src/ll/pipeline.hpp"
+#include "../src/ll/cbuf.hpp"
+#include "../src/timer.hpp"
+#include "../src/glfw_window.hpp"
 
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -43,17 +43,17 @@ int main() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
 	glfwSetFramebufferSizeCallback(window.window, resize_callback);
 
-	auto base = vk_base::create<vk_base::Glfw>(window.req_instance_exts,
-						   std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
-						   window.window);
+	auto base = base::create<base::Glfw>(window.req_instance_exts,
+					     std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
+					     window.window);
 
 	// Load shaders
-	auto vs = vk_shader::Shader(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shader.vert.spv");
-	auto fs = vk_shader::Shader(base.device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shader.frag.spv");
+	auto vs = ll::shader::Shader(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shaders/shader.vert.spv");
+	auto fs = ll::shader::Shader(base.device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shaders/shader.frag.spv");
 
 	VkPipelineShaderStageCreateInfo shaders[] = {vs.info, fs.info};
 
-	auto pipeline_lt = vk_pipeline::layout(base.device);
+	auto pipeline_lt = ll::pipeline::layout(base.device);
 
 	// Allocate command buffer
 	VkCommandPoolCreateInfo cpool_info{};
@@ -104,7 +104,7 @@ int main() {
 
 	// Everything from here on depends on the swapchain, so we make them
 	// null for now
-	vk_swapchain::Swapchain swapchain;
+	ll::swapchain::Swapchain swapchain;
 	VkRenderPass rpass = VK_NULL_HANDLE;
 	VkPipeline pipeline = VK_NULL_HANDLE;
 	std::vector<VkFramebuffer> fbs;
@@ -127,7 +127,7 @@ int main() {
 
 			// Create swapchain
 			auto [wwidth, wheight] = window.get_dims();
-			swapchain = vk_swapchain::Swapchain(base.phys_dev, base.device, base.surface,
+			swapchain = ll::swapchain::Swapchain(base.phys_dev, base.device, base.surface,
 							    VK_NULL_HANDLE,
 							    base.queue_fams.unique.size(), base.queue_fams.unique.data(),
 							    wwidth, wheight);
@@ -139,14 +139,14 @@ int main() {
 			if (!fbs.empty()) for (auto& i : fbs) vkDestroyFramebuffer(base.device, i, nullptr);
 
 			// Create render pass
-			auto color_attachment = vk_rpass::attachment(swapchain.format);
-			auto color_ref = vk_rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			auto subpass = vk_rpass::subpass(1, &color_ref);
-			auto subpass_dep = vk_rpass::dependency();
-			rpass = vk_rpass::rpass(base.device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
+			auto color_attachment = ll::rpass::attachment(swapchain.format);
+			auto color_ref = ll::rpass::attachment_ref(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			auto subpass = ll::rpass::subpass(1, &color_ref);
+			auto subpass_dep = ll::rpass::dependency();
+			rpass = ll::rpass::rpass(base.device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
 
 			// Create pipeline
-			pipeline = vk_pipeline::pipeline(base.device, 2, shaders, pipeline_lt, rpass);
+			pipeline = ll::pipeline::pipeline(base.device, 2, shaders, pipeline_lt, rpass);
 
 			// Create framebuffers
 			fbs.resize(swapchain.images.size());
@@ -217,13 +217,13 @@ int main() {
 		// We're now rendering to this image, so mark it with our fence
 		image_fences[image_idx] = render_done_fences[sync_set_idx];
 
-		vk_cbuf::begin(cbuf);
-		vk_cbuf::begin_rpass(cbuf, rpass, fbs[image_idx], swapchain.width, swapchain.height);
-		vk_cbuf::bind_pipeline(cbuf, pipeline);
-		vk_cbuf::set_viewport(cbuf, {viewport});
-		vk_cbuf::set_scissor(cbuf, {scissor});
-		vk_cbuf::draw(cbuf, 3);
-		vk_cbuf::end_rpass(cbuf);
+		ll::cbuf::begin(cbuf);
+		ll::cbuf::begin_rpass(cbuf, rpass, fbs[image_idx], swapchain.width, swapchain.height);
+		ll::cbuf::bind_pipeline(cbuf, pipeline);
+		ll::cbuf::set_viewport(cbuf, {viewport});
+		ll::cbuf::set_scissor(cbuf, {scissor});
+		ll::cbuf::draw(cbuf, 3);
+		ll::cbuf::end_rpass(cbuf);
 
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

@@ -1,13 +1,13 @@
-#include "vk_base.hpp"
+#include "base.hpp"
 
-#include "vk_instance.hpp"
-#include "vk_phys_dev.hpp"
-#include "vk_device.hpp"
+#include "ll/instance.hpp"
+#include "ll/phys_dev.hpp"
+#include "ll/device.hpp"
 
 #include <vulkan/vulkan.h>
 #include <iostream>
 
-namespace vk_base {
+namespace base {
 
 #ifdef NDEBUG
 	const bool VALIDATION_ENABLED = false;
@@ -24,7 +24,7 @@ namespace vk_base {
 	std::pair<VkInstance, VkDebugUtilsMessengerEXT> Default::create_instance(const Base&) {
 		// DebugUtils... will only actually be set if validation is enabled
 		std::pair<VkInstance, VkDebugUtilsMessengerEXT> out;
-		vk_instance::create(instance_exts, {}, VALIDATION_ENABLED, &out.first, &out.second);
+		ll::instance::create(instance_exts, {}, VALIDATION_ENABLED, &out.first, &out.second);
 
 		return out;
 	}
@@ -33,13 +33,13 @@ namespace vk_base {
 
 	std::pair<VkPhysicalDevice, std::string> Default::create_phys_dev(const Base& base) {
 		std::pair<VkPhysicalDevice, std::string> out;
-		out.second = vk_phys_dev::create(base.instance, vk_phys_dev::default_scorer, &out.first);
+		out.second = ll::phys_dev::create(base.instance, ll::phys_dev::default_scorer, &out.first);
 
 		return out;
 	}
 
-	vk_queue::QueueFamilies Default::create_queue_fams(const Base& base) {
-		vk_queue::QueueFamilies queue_fams;
+	ll::queue::QueueFamilies Default::create_queue_fams(const Base& base) {
+		ll::queue::QueueFamilies queue_fams;
 		if (base.surface != VK_NULL_HANDLE) queue_fams = {base.phys_dev, base.surface};
 		else queue_fams = {base.phys_dev};
 
@@ -51,17 +51,17 @@ namespace vk_base {
 
 	VkDevice Default::create_device(const Base& base) {
 		// The device has to support all our different queue families
-		auto dev_queue_infos = vk_device::default_queue_infos(base.queue_fams.unique.begin(),
+		auto dev_queue_infos = ll::device::default_queue_infos(base.queue_fams.unique.begin(),
 								      base.queue_fams.unique.end());
 
 		VkDevice device;
-		vk_device::create(base.phys_dev, dev_queue_infos, {}, device_exts, &device);
+		ll::device::create(base.phys_dev, dev_queue_infos, {}, device_exts, &device);
 
 		return device;
 	}
 
-	vk_queue::Queues Default::create_queues(const Base& base) {
-		return vk_queue::Queues(base.device, base.queue_fams);
+	ll::queue::Queues Default::create_queues(const Base& base) {
+		return ll::queue::Queues(base.device, base.queue_fams);
 	}
 
 	/*
@@ -78,7 +78,7 @@ namespace vk_base {
 		return surface;
 	}
 
-	vk_queue::QueueFamilies Glfw::create_queue_fams(const Base& base) {
+	ll::queue::QueueFamilies Glfw::create_queue_fams(const Base& base) {
 		auto queues =  Default::create_queue_fams(base);
 		if (!queues.present.has_value())
 			throw std::runtime_error("No present queue!");

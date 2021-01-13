@@ -1,11 +1,11 @@
 #include <vulkan/vulkan.h>
-#ifndef VK_INSTANCE_H
-#define VK_INSTANCE_H
+#ifndef LL_INSTANCE_H
+#define LL_INSTANCE_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_instance {
+namespace ll::instance {
 	// If validation is enabled, VALIDATION_EXTENSIONS and VALIDATION_LAYERS
 	// will be added to the user-specified extensions and layers, and a
 	// debug callback will be added. debug_msgr maybe be null if validation
@@ -18,4 +18,4 @@ namespace vk_instance {
 	void destroy_debug_msgr(VkInstance instance, VkDebugUtilsMessengerEXT debug_msgr);
 }
 
-#endif // VK_INSTANCE_H
+#endif // LL_INSTANCE_H

@@ -1,5 +1,5 @@
-#include "vk_base.hpp"
-#include "glfw_window.hpp"
+#include "../src/base.hpp"
+#include "../src/glfw_window.hpp"
 
 #include <iostream>
 #include <string>
@@ -11,9 +11,9 @@ const std::vector<const char *> DEVICE_EXTS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 int main() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
-	auto b = vk_base::create<vk_base::Glfw>(window.req_instance_exts,
-						DEVICE_EXTS,
-						window.window);
+	auto b = base::create<base::Glfw>(window.req_instance_exts,
+					  DEVICE_EXTS,
+					  window.window);
 	std::cout << "Using device: " << b.phys_dev_name << std::endl;
 	std::cout << "Logical device: " << b.device << std::endl;
 	std::cout << "Surface: " << b.surface << std::endl;

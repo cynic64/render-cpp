@@ -1,8 +1,8 @@
-#include "vk_pipeline.hpp"
+#include "pipeline.hpp"
 
 #include <stdexcept>
 
-namespace vk_pipeline {
+namespace ll::pipeline {
 	VkPipelineLayout layout(VkDevice device) {
 		VkPipelineLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

@@ -1,9 +1,9 @@
-#ifndef VK_PIPELINE_H
-#define VK_PIPELINE_H
+#ifndef LL_PIPELINE_H
+#define LL_PIPELINE_H
 
 #include <vulkan/vulkan.h>
 
-namespace vk_pipeline {
+namespace ll::pipeline {
 	VkPipelineLayout layout(VkDevice device);
 
 	VkPipeline pipeline(VkDevice device,
@@ -11,4 +11,4 @@ namespace vk_pipeline {
 			    VkPipelineLayout layout, VkRenderPass rpass);
 }
 
-#endif // VK_PIPELINE_H
+#endif // LL_PIPELINE_H

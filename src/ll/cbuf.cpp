@@ -1,8 +1,8 @@
-#include "vk_cbuf.hpp"
+#include "cbuf.hpp"
 
 #include <stdexcept>
 
-namespace vk_cbuf {
+namespace ll::cbuf {
 	void begin(VkCommandBuffer cbuf, VkCommandBufferUsageFlags flags) {
 		VkCommandBufferBeginInfo cbuf_begin{};
 		cbuf_begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

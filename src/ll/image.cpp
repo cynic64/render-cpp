@@ -1,8 +1,8 @@
-#include "vk_image.hpp"
+#include "image.hpp"
 
 #include <stdexcept>
 
-namespace vk_image {
+namespace ll::image {
 	std::vector<VkImage> from_swapchain(VkDevice device, VkSwapchainKHR swapchain) {
 		uint32_t image_ct;
 		vkGetSwapchainImagesKHR(device, swapchain, &image_ct, nullptr);

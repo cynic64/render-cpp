@@ -1,11 +1,11 @@
-#ifndef VK_QUEUE_H
-#define VK_QUEUE_H
+#ifndef LL_QUEUE_H
+#define LL_QUEUE_H
 
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <vector>
 
-namespace vk_queue {
+namespace ll::queue {
 	struct QueueFamilies {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;
@@ -28,4 +28,4 @@ namespace vk_queue {
 	};
 }
 
-#endif // VK_QUEUE_H
+#endif // LL_QUEUE_H

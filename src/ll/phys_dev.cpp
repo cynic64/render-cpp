@@ -1,11 +1,11 @@
-#include "vk_phys_dev.hpp"
+#include "phys_dev.hpp"
 
 #include <vector>
 #include <stdexcept>
 #include <string>
 #include <algorithm>
 
-namespace vk_phys_dev {
+namespace ll::phys_dev {
 	std::string create(VkInstance instance, ScoringFunction fun, VkPhysicalDevice* chosen_phys_dev) {
 		uint32_t phys_dev_ct;
 		vkEnumeratePhysicalDevices(instance, &phys_dev_ct, nullptr);
@@ -36,7 +36,8 @@ namespace vk_phys_dev {
 		return best_name;
 	}
 	
-	int default_scorer(VkPhysicalDevice const&, VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) {
+	int default_scorer(VkPhysicalDevice const&,
+			   VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) {
 		auto score = 1;
 		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 1;
 		

@@ -1,10 +1,10 @@
-#ifndef VK_SWAPCHAIN_H
-#define VK_SWAPCHAIN_H
+#ifndef LL_SWAPCHAIN_H
+#define LL_SWAPCHAIN_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vk_swapchain {
+namespace ll::swapchain {
 	struct SwapchainSettings {
 		VkFormat format_pref;
 		VkColorSpaceKHR color_space_pref;
@@ -57,4 +57,4 @@ namespace vk_swapchain {
 
 }
 
-#endif // VK_SWAPCHAIN_H
+#endif // LL_SWAPCHAIN_H
