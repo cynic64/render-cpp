@@ -13,6 +13,7 @@ namespace vk_queue {
 		std::vector<uint32_t> unique;
 
 		QueueFamilies() {};
+
 		// Surface can be empty if you don't care about present support
 		QueueFamilies(VkPhysicalDevice phys_dev, std::optional<VkSurfaceKHR> surface = std::nullopt);
 	};
