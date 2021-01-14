@@ -43,9 +43,10 @@ int main() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
 	glfwSetFramebufferSizeCallback(window.window, resize_callback);
 
-	auto base = base::create<base::Glfw>(window.req_instance_exts,
-					     std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
-					     window.window);
+	auto base_deps = base::Glfw(window.req_instance_exts, {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, window.window);
+	auto base = base::create(base_deps);
+
+	std::cout << "Using device: " << base.phys_dev_name << std::endl;
 
 	// Load shaders
 	auto vs = ll::shader::Shader(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shaders/shader.vert.spv");

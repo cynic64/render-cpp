@@ -57,9 +57,8 @@ namespace base {
 		}
 	};
 
-	template <typename D = Default, typename... Ts>
-	Base create(Ts... args) {
-		D deps(args...);
+	template <typename D>
+	Base create(D deps) {
 		Base b{};
 			
 		std::tie(b.instance, b.debug_msgr) = deps.create_instance(b);
