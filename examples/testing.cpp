@@ -238,8 +238,6 @@ int main() {
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &render_done_sems[sync_set_idx];
 
-		if (must_recreate) continue;
-
 		if (vkQueueSubmit(base.queues.graphics, 1, &submit_info, render_done_fences[sync_set_idx]) != VK_SUCCESS)
 			throw std::runtime_error("Could not submit!");
 
