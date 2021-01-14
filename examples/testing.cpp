@@ -249,8 +249,6 @@ int main() {
 		present_info.pSwapchains = &swapchain.swapchain;
 		present_info.pImageIndices = &image_idx;
 
-		if (must_recreate) continue;
-
 		auto res = vkQueuePresentKHR(base.queues.present, &present_info);
 		if (res == VK_ERROR_OUT_OF_DATE_KHR) {
 			must_recreate = true;
