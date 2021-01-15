@@ -7,13 +7,39 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <tuple>
+#include <memory>
 
 namespace base {
 	struct Base;
 
+	struct Dependencies {
+		virtual std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base) = 0;
+		virtual VkSurfaceKHR create_surface(const Base& base) = 0;
+		virtual std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base& base) = 0;
+		virtual ll::queue::QueueFamilies create_queue_fams(const Base& base) = 0;
+		virtual VkDevice create_device(const Base& base) = 0;
+		virtual ll::queue::Queues create_queues(const Base& base) = 0;
+		virtual ~Dependencies() = default;
+	};
+
+	struct Base {
+		VkInstance instance;
+		VkDebugUtilsMessengerEXT debug_msgr;
+		VkSurfaceKHR surface;
+		VkPhysicalDevice phys_dev;
+		std::string phys_dev_name;
+		ll::queue::QueueFamilies queue_fams;
+		VkDevice device;
+		ll::queue::Queues queues;
+
+		Base(std::unique_ptr<Dependencies>&& deps);
+
+		~Base();
+	};
+
 	// Creates the basics, does not create a surface or a present
 	// queue. Constructor requires instance and device extensions.
-	struct Default {
+	struct Default : Dependencies {
 		Default(std::vector<const char *> instance_exts, std::vector<const char *> device_exts);
 		std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base);
 		VkSurfaceKHR create_surface(const Base& base);
@@ -36,40 +62,6 @@ namespace base {
 		GLFWwindow* window;
 	};
 
-	struct Base {
-		VkInstance instance;
-		VkDebugUtilsMessengerEXT debug_msgr;
-		VkSurfaceKHR surface;
-		VkPhysicalDevice phys_dev;
-		std::string phys_dev_name;
-		ll::queue::QueueFamilies queue_fams;
-		VkDevice device;
-		ll::queue::Queues queues;
-
-		~Base() {
-			if (surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance, surface, nullptr);
-
-			vkDestroyDevice(device, nullptr);
-
-			if (debug_msgr != VK_NULL_HANDLE)
-				ll::instance::destroy_debug_msgr(instance, debug_msgr);
-			vkDestroyInstance(instance, nullptr);
-		}
-	};
-
-	template <typename D>
-	Base create(D deps) {
-		Base b{};
-			
-		std::tie(b.instance, b.debug_msgr) = deps.create_instance(b);
-		b.surface = deps.create_surface(b);
-		std::tie(b.phys_dev, b.phys_dev_name) = deps.create_phys_dev(b);
-		b.queue_fams = deps.create_queue_fams(b);
-		b.device = deps.create_device(b);
-		b.queues = deps.create_queues(b);
-
-		return b;
-	}
 }
 
 #endif // VK_BASE_H

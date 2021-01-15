@@ -14,6 +14,27 @@ namespace base {
 #else
 	const bool VALIDATION_ENABLED = true;
 #endif
+	/*
+	 * Base
+	 */
+	Base::Base(std::unique_ptr<Dependencies>&& deps) {
+		std::tie(instance, debug_msgr) = deps->create_instance(*this);
+		surface = deps->create_surface(*this);
+		std::tie(phys_dev, phys_dev_name) = deps->create_phys_dev(*this);
+		queue_fams = deps->create_queue_fams(*this);
+		device = deps->create_device(*this);
+		queues = deps->create_queues(*this);
+	}
+
+	Base::~Base() {
+		if (surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance, surface, nullptr);
+
+		vkDestroyDevice(device, nullptr);
+
+		if (debug_msgr != VK_NULL_HANDLE)
+			ll::instance::destroy_debug_msgr(instance, debug_msgr);
+		vkDestroyInstance(instance, nullptr);
+	}
 
 	/*
 	 * Default

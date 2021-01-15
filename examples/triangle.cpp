@@ -9,8 +9,10 @@ const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
 int main() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
-	auto b_deps = base::Glfw(window.req_instance_exts, {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, window.window);
-	auto b = base::create(b_deps);
+	// C++ is truly a beautiful language
+	base::Base b(std::make_unique<base::Glfw>(window.req_instance_exts,
+						  std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
+						  window.window));
 	std::cout << "Using device: " << b.phys_dev_name << std::endl;
 	std::cout << "Logical device: " << b.device << std::endl;
 	std::cout << "Surface: " << b.surface << std::endl;

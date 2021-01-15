@@ -43,8 +43,9 @@ int main() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
 	glfwSetFramebufferSizeCallback(window.window, resize_callback);
 
-	auto base_deps = base::Glfw(window.req_instance_exts, {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, window.window);
-	auto base = base::create(base_deps);
+	base::Base base(std::make_unique<base::Glfw>(window.req_instance_exts,
+						     std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
+						     window.window));
 
 	std::cout << "Using device: " << base.phys_dev_name << std::endl;
 
