@@ -17,7 +17,11 @@ namespace base {
 	/*
 	 * Base
 	 */
-	Base::Base(std::unique_ptr<Dependencies>&& deps) {
+	Base::Base(std::unique_ptr<Dependencies>&& deps)
+		: instance(VK_NULL_HANDLE), debug_msgr(VK_NULL_HANDLE),
+		  surface(VK_NULL_HANDLE), phys_dev(VK_NULL_HANDLE), phys_dev_name(""),
+		  device(VK_NULL_HANDLE)
+	{
 		std::tie(instance, debug_msgr) = deps->create_instance(*this);
 		surface = deps->create_surface(*this);
 		std::tie(phys_dev, phys_dev_name) = deps->create_phys_dev(*this);
