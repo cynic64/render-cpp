@@ -43,20 +43,22 @@ namespace ll::rpass {
 		0 // dependencyFlags
 	};
 
-	VkAttachmentDescription attachment(VkFormat format,
-					   AttachmentSettings settings = ATTACHMENT_DEFAULTS);
+	auto attachment(VkFormat format, AttachmentSettings settings = ATTACHMENT_DEFAULTS)
+		-> VkAttachmentDescription;
 
-	VkAttachmentReference attachment_ref(uint32_t idx, VkImageLayout layout);
+	auto attachment_ref(uint32_t idx, VkImageLayout layout) -> VkAttachmentReference;
 
-	VkSubpassDescription subpass(uint32_t color_ref_ct, VkAttachmentReference* color_refs,
-				     SubpassSettings settings = SUBPASS_DEFAULTS);
+	auto subpass(uint32_t color_ref_ct, VkAttachmentReference* color_refs,
+		     SubpassSettings settings = SUBPASS_DEFAULTS)
+		-> VkSubpassDescription;
 
-	VkSubpassDependency dependency(VkSubpassDependency settings = DEPENDENCY_DEFAULTS);
+	auto dependency(VkSubpassDependency settings = DEPENDENCY_DEFAULTS) -> VkSubpassDependency;
 
-	VkRenderPass rpass(VkDevice device,
-			   uint32_t attachment_ct, VkAttachmentDescription* attachments,
-			   uint32_t subpass_ct, VkSubpassDescription* subpasses,
-			   uint32_t dependecy_ct, VkSubpassDependency* dependencies);
+	auto rpass(VkDevice device,
+		   uint32_t attachment_ct, VkAttachmentDescription* attachments,
+		   uint32_t subpass_ct, VkSubpassDescription* subpasses,
+		   uint32_t dependecy_ct, VkSubpassDependency* dependencies)
+		-> VkRenderPass;
 }
 
 #endif // LL_RPASS_H_

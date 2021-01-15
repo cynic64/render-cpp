@@ -5,9 +5,11 @@
 
 namespace ll::queue {
 	QueueFamilies::QueueFamilies(VkPhysicalDevice phys_dev, std::optional<VkSurfaceKHR> surface) {
-		uint32_t queue_fam_ct;
+		uint32_t queue_fam_ct = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct,
 							 nullptr);
+		if (queue_fam_ct == 0) throw std::runtime_error("0 queues!");
+
 		std::vector<VkQueueFamilyProperties> queue_fams(queue_fam_ct);
 		vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_fam_ct,
 							 queue_fams.data());
@@ -17,7 +19,7 @@ namespace ll::queue {
 				graphics = i;
 
                         if (surface.has_value()) {
-				VkBool32 present_supported;
+				VkBool32 present_supported = VK_FALSE;
 				vkGetPhysicalDeviceSurfaceSupportKHR(
 					phys_dev, i, surface.value(), &present_supported);
 				if (present_supported)

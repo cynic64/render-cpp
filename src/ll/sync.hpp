@@ -16,9 +16,9 @@ namespace ll::sync {
 		0 // flags
 	};
 
-	VkSemaphore semaphore(VkDevice device);
+	auto semaphore(VkDevice device) -> VkSemaphore;
 
-	VkFence fence(VkDevice device, VkFenceCreateFlags flags = 0);
+	auto fence(VkDevice device, VkFenceCreateFlags flags = 0) -> VkFence;
 }
 
 #endif // LL_SYNC_H

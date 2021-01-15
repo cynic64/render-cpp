@@ -15,9 +15,9 @@ namespace ll::cbuf {
 	void bind_pipeline(VkCommandBuffer cbuf,
 			   VkPipeline pipeline, VkPipelineBindPoint point = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-	void set_viewport(VkCommandBuffer cbuf, std::vector<VkViewport> viewports);
+	void set_viewport(VkCommandBuffer cbuf, const std::vector<VkViewport>& viewports);
 
-	void set_scissor(VkCommandBuffer cbuf, std::vector<VkRect2D> scissors);
+	void set_scissor(VkCommandBuffer cbuf, const std::vector<VkRect2D>& scissors);
 
 	void draw(VkCommandBuffer cbuf, uint32_t vertex_ct,
 		  uint32_t instance_ct = 1, uint32_t first_vertex = 0, uint32_t first_instance = 0);

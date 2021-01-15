@@ -6,19 +6,19 @@
 #include <vulkan/vulkan.h>
 
 namespace ll::device {
-	const float DEFAULT_QUEUE_PRIORITY = 1.0f;
+	const float DEFAULT_QUEUE_PRIORITY = 1.0F;
 
 	// Req_features is currently unimplemented
 	void create(VkPhysicalDevice phys_dev,
 		    std::vector<VkDeviceQueueCreateInfo> queue_infos,
 		    VkPhysicalDeviceFeatures req_features,
-		    std::vector<const char *> req_extensions,
+		    const std::vector<const char *>& req_extensions,
 		    VkDevice* device);
 
 	// Generates a vector of VkDeviceQueueCreateInfo from a list of queue
 	// families that can be used to create a device.
         template <class InputIt>
-        std::vector<VkDeviceQueueCreateInfo> default_queue_infos(InputIt start, InputIt stop) {
+        auto default_queue_infos(InputIt start, InputIt stop) -> std::vector<VkDeviceQueueCreateInfo> {
 		std::vector<VkDeviceQueueCreateInfo> queue_infos;
 
 		for (; start != stop; ++start) {

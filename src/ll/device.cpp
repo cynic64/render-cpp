@@ -3,7 +3,9 @@
 #include <cstring>
 
 namespace ll::device {
-	bool check_extension_support(VkPhysicalDevice phys_dev, std::vector<const char *> req_extensions) {
+	auto check_extension_support(VkPhysicalDevice phys_dev,
+				     const std::vector<const char *>& req_extensions) -> bool
+	{
 		uint32_t ext_ct;
 		vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &ext_ct, nullptr);
 
@@ -22,8 +24,9 @@ namespace ll::device {
 	void create(VkPhysicalDevice phys_dev,
 		    std::vector<VkDeviceQueueCreateInfo> queue_infos,
 		    VkPhysicalDeviceFeatures req_features,
-		    std::vector<const char *> req_extensions,
-		    VkDevice* device) {
+		    const std::vector<const char *>& req_extensions,
+		    VkDevice* device)
+	{
 		if (!check_extension_support(phys_dev, req_extensions))
 			throw std::runtime_error("Required device extensions not supported!");
 

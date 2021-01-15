@@ -19,8 +19,8 @@ namespace ll::image {
 		}
 	};
 
-	VkImageView to_view(VkDevice device, VkImage image, VkFormat format,
-			    ImageViewSettings const& settings = IMAGE_VIEW_DEFAULTS);
+	auto to_view(VkDevice device, VkImage image, VkFormat format,
+		     ImageViewSettings const& settings = IMAGE_VIEW_DEFAULTS) -> VkImageView;
 }
 
 #endif // Ll_IMAGE_H

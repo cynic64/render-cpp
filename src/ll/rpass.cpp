@@ -3,8 +3,8 @@
 #include <stdexcept>
 
 namespace ll::rpass {
-	VkAttachmentDescription attachment(VkFormat format,
-					   AttachmentSettings settings) {
+	auto attachment(VkFormat format,
+			AttachmentSettings settings) -> VkAttachmentDescription {
 		VkAttachmentDescription info{};
 		info.format = format;
 		info.samples = settings.samples;
@@ -18,7 +18,7 @@ namespace ll::rpass {
 		return info;
 	}
 
-	VkAttachmentReference attachment_ref(uint32_t idx, VkImageLayout layout) {
+	auto attachment_ref(uint32_t idx, VkImageLayout layout) -> VkAttachmentReference {
 		VkAttachmentReference info{};
 		info.attachment = idx;
 		info.layout = layout;
@@ -26,8 +26,9 @@ namespace ll::rpass {
 		return info;
 	}
 
-	VkSubpassDescription subpass(uint32_t color_ref_ct, VkAttachmentReference* color_refs,
-				     SubpassSettings settings) {
+	auto subpass(uint32_t color_ref_ct, VkAttachmentReference* color_refs, SubpassSettings settings)
+		-> VkSubpassDescription
+	{
 		VkSubpassDescription info{};
 		info.pipelineBindPoint = settings.bind_point;
 		info.colorAttachmentCount = color_ref_ct;
@@ -36,15 +37,17 @@ namespace ll::rpass {
 		return info;
 	}
 
-	VkSubpassDependency dependency(VkSubpassDependency settings) {
-		// So useful...
+	auto dependency(VkSubpassDependency settings) -> VkSubpassDependency {
+		// So useful... I feel like a Java programmer
 		return settings;
 	}
 
-	VkRenderPass rpass(VkDevice device,
-			   uint32_t attachment_ct, VkAttachmentDescription* attachments,
-			   uint32_t subpass_ct, VkSubpassDescription* subpasses,
-			   uint32_t dependecy_ct, VkSubpassDependency* dependencies) {
+	auto rpass(VkDevice device,
+		   uint32_t attachment_ct, VkAttachmentDescription* attachments,
+		   uint32_t subpass_ct, VkSubpassDescription* subpasses,
+		   uint32_t dependecy_ct, VkSubpassDependency* dependencies)
+		-> VkRenderPass
+	{
 		VkRenderPassCreateInfo rpass_info{};
 		rpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		rpass_info.attachmentCount = attachment_ct;
@@ -54,7 +57,7 @@ namespace ll::rpass {
 		rpass_info.dependencyCount = dependecy_ct;
 		rpass_info.pDependencies = dependencies;
 
-		VkRenderPass rpass;
+		VkRenderPass rpass{};
 		if (vkCreateRenderPass(device, &rpass_info, nullptr, &rpass) != VK_SUCCESS)
 			throw std::runtime_error("Could not create render pass!");
 

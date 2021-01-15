@@ -5,17 +5,13 @@
 #include <vector>
 
 namespace ll::shader {
-	class Shader {
-	public:
-		Shader(VkDevice device, VkShaderStageFlagBits stage, std::vector<char> bytes);
-		Shader(VkDevice device, VkShaderStageFlagBits stage, const char* filename);
+	using Shader = VkPipelineShaderStageCreateInfo;
 
-		void destroy(VkDevice device);
+	auto create(VkDevice device, VkShaderStageFlagBits stage, const std::vector<char>& bytes) -> Shader;
 
-		VkPipelineShaderStageCreateInfo info;
-	};
+	auto create(VkDevice device, VkShaderStageFlagBits stage, const char* filename) -> Shader;
 
-	std::vector<char> read_bytes(const char* filename);
+	void destroy(VkDevice device, Shader shader);
 }
 
 #endif // LL_SHADER_H

@@ -13,7 +13,7 @@ namespace ll::instance {
 	const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
 	const std::vector<const char*> VALIDATION_EXTENSIONS = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 
-	bool check_validation_layer_support(std::vector<const char*> req_layers) {
+	auto check_validation_layer_support(const std::vector<const char*>& req_layers) -> bool {
 		uint32_t supported_ct;
 		vkEnumerateInstanceLayerProperties(&supported_ct, nullptr);
 
@@ -28,7 +28,7 @@ namespace ll::instance {
 		return true;
 	}
 
-	bool check_instance_ext_support(std::vector<const char*> req_exts) {
+	auto check_instance_ext_support(const std::vector<const char*>& req_exts) -> bool {
 		uint32_t supported_ext_ct;
 		vkEnumerateInstanceExtensionProperties(nullptr, &supported_ext_ct, nullptr);
 		std::vector<VkExtensionProperties> supported(supported_ext_ct);
@@ -42,28 +42,29 @@ namespace ll::instance {
 		return true;
 	}
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+	static VKAPI_ATTR auto VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 							     VkDebugUtilsMessageTypeFlagsEXT,
 							     const VkDebugUtilsMessengerCallbackDataEXT* data,
-							     void*) {
+							     void*) -> VkBool32 {
 		if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 			std::cerr << "validation layer: " << data->pMessage << std::endl;
 
 		return VK_FALSE;
 	}
 
-	VkResult create_debug_msgr(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* info,
-				   VkDebugUtilsMessengerEXT* msgr) {
+	void create_debug_msgr(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* info,
+			       VkDebugUtilsMessengerEXT* msgr) {
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
 			vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-		if (func) return func(instance, info, nullptr, msgr);
-		else return VK_ERROR_EXTENSION_NOT_PRESENT;
+		if (func == nullptr)
+			throw std::runtime_error("Could not get function for vkCreateDebugUtilsMessengerEXT!");
+		func(instance, info, nullptr, msgr);
 	}
 
 	void destroy_debug_msgr(VkInstance instance, VkDebugUtilsMessengerEXT debug_msgr) {
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
 			vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if (func) func(instance, debug_msgr, nullptr);
+		if (func != nullptr) func(instance, debug_msgr, nullptr);
 		else throw std::runtime_error("Coud not get address of vkDestroyDebugUtilsMessengerEXT!");
 	}
 
@@ -115,11 +116,6 @@ namespace ll::instance {
 		if(vkCreateInstance(&instance_info, nullptr, instance) != VK_SUCCESS)
 			throw std::runtime_error("Failed to create instance!");
 
-		if (validation_enabled) {
-			// Create debug messenger
-			if (create_debug_msgr(*instance, &debug_msgr_info, debug_msgr) != VK_SUCCESS)
-				throw std::runtime_error("Failed to create debug messenger!");
-		}
-
+		if (validation_enabled) create_debug_msgr(*instance, &debug_msgr_info, debug_msgr);
 	}
 }

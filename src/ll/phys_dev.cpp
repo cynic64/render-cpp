@@ -6,7 +6,7 @@
 #include <algorithm>
 
 namespace ll::phys_dev {
-	std::string create(VkInstance instance, ScoringFunction fun, VkPhysicalDevice* chosen_phys_dev) {
+	auto create(VkInstance instance, ScoringFunction fun, VkPhysicalDevice* chosen_phys_dev) -> std::string {
 		uint32_t phys_dev_ct;
 		vkEnumeratePhysicalDevices(instance, &phys_dev_ct, nullptr);
 		if (phys_dev_ct == 0)
@@ -31,13 +31,13 @@ namespace ll::phys_dev {
 			}
 		}
 
-		if (!best_score) throw std::runtime_error("No GPU received a postive score!");
+		if (best_score == 0) throw std::runtime_error("No GPU received a postive score!");
 
 		return best_name;
 	}
 	
-	int default_scorer(VkPhysicalDevice const&,
-			   VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) {
+	auto default_scorer(VkPhysicalDevice const&,
+			    VkPhysicalDeviceProperties const& props, VkPhysicalDeviceFeatures const&) -> int {
 		auto score = 1;
 		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 1;
 		

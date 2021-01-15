@@ -1,22 +1,25 @@
 #include "pipeline.hpp"
 
 #include <stdexcept>
+#include <array>
 
 namespace ll::pipeline {
-	VkPipelineLayout layout(VkDevice device) {
+	auto layout(VkDevice device) -> VkPipelineLayout {
 		VkPipelineLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-		VkPipelineLayout layout;
+		VkPipelineLayout layout{};
 		if (vkCreatePipelineLayout(device, &layout_info, nullptr, &layout) != VK_SUCCESS)
 			throw std::runtime_error("Couldn't create pipeline layout!");
 
 		return layout;
 	}
 
-	VkPipeline pipeline(VkDevice device,
-			    uint32_t shader_ct, VkPipelineShaderStageCreateInfo* shaders,
-			    VkPipelineLayout layout, VkRenderPass rpass) {
+	auto pipeline(VkDevice device,
+		      uint32_t shader_ct, VkPipelineShaderStageCreateInfo* shaders,
+		      VkPipelineLayout layout, VkRenderPass rpass)
+		-> VkPipeline
+	{
 		VkPipelineVertexInputStateCreateInfo vertex_input{};
 		vertex_input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
@@ -36,7 +39,7 @@ namespace ll::pipeline {
 		rasterizer.depthClampEnable = VK_FALSE;
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
+		rasterizer.lineWidth = 1.0F;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
@@ -47,7 +50,10 @@ namespace ll::pipeline {
 		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 		VkPipelineColorBlendAttachmentState attachment_blend{};
-		attachment_blend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		attachment_blend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+			| VK_COLOR_COMPONENT_G_BIT
+			| VK_COLOR_COMPONENT_B_BIT
+			| VK_COLOR_COMPONENT_A_BIT;
 		attachment_blend.blendEnable = VK_FALSE;
 
 		VkPipelineColorBlendStateCreateInfo blending{};
@@ -56,12 +62,12 @@ namespace ll::pipeline {
 		blending.attachmentCount = 1;
 		blending.pAttachments = &attachment_blend;
 
-		VkDynamicState dyn_states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+		std::array<VkDynamicState, 2> dyn_states = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
 		VkPipelineDynamicStateCreateInfo dyn_state{};
 		dyn_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dyn_state.dynamicStateCount = std::extent<decltype(dyn_states)>::value;
-		dyn_state.pDynamicStates = dyn_states;
+		dyn_state.dynamicStateCount = dyn_states.size();
+		dyn_state.pDynamicStates = dyn_states.data();
 
 		VkGraphicsPipelineCreateInfo pipeline_info{};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -78,7 +84,7 @@ namespace ll::pipeline {
 		pipeline_info.renderPass = rpass;
 		pipeline_info.subpass = 0;
 
-		VkPipeline pipeline;
+		VkPipeline pipeline{};
 		if (vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_info, nullptr, &pipeline) != VK_SUCCESS)
 			throw std::runtime_error("Could not create pipeline!");
 

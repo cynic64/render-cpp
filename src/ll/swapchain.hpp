@@ -23,8 +23,7 @@ namespace ll::swapchain {
 	};
 
 	struct Swapchain {
-	public:
-		VkSwapchainKHR swapchain;
+		VkSwapchainKHR handle;
 		std::vector<VkImage> images;
 		std::vector<VkImageView> image_views;
 
@@ -33,28 +32,22 @@ namespace ll::swapchain {
 		VkPresentModeKHR present_mode;
 		uint32_t width;
 		uint32_t height;
-
-		// Queue_fam_ct should be less than 2 if
-		// VK_SHARING_MODE_EXCLUSIVE is desired. Queue_fams can be
-		// invalidated after create() is finished. Old_swapchain should
-		// be VK_NULL_HANDLE if none exists.
-		//
-		// The preferences in settings may not be possible, look at our
-		// fields to see what format and so on was really chosen.
-		Swapchain(VkPhysicalDevice phys_dev, VkDevice device,
-			  VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
-			  uint32_t queue_fam_ct, uint32_t* queue_fams,
-			  uint32_t window_width, uint32_t window_height,
-			  SwapchainSettings const& settings = SWAPCHAIN_DEFAULTS);
-
-		Swapchain() : swapchain(VK_NULL_HANDLE) {}
-
-		void destroy();
-
-	private:
-		VkDevice device;
 	};
 
+	// Queue_fam_ct should be less than 2 if
+	// VK_SHARING_MODE_EXCLUSIVE is desired. Queue_fams can be
+	// invalidated after create() is finished. Old_swapchain should
+	// be VK_NULL_HANDLE if none exists.
+	//
+	// The preferences in settings may not be possible, look at our
+	// fields to see what format and so on was really chosen.
+	auto create(VkPhysicalDevice phys_dev, VkDevice device,
+		    VkSurfaceKHR surface, VkSwapchainKHR old_swapchain,
+		    uint32_t queue_fam_ct, const uint32_t* queue_fams,
+		    uint32_t window_width, uint32_t window_height,
+		    SwapchainSettings const& settings = SWAPCHAIN_DEFAULTS) -> Swapchain;
+
+	void destroy(VkDevice device, const Swapchain& swapchain);
 }
 
 #endif // LL_SWAPCHAIN_H

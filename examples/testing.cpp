@@ -29,12 +29,6 @@ const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
 const auto CBUF_CT = 4;
 
-#ifdef NDEBUG
-const bool VALIDATION_ENABLED = false;
-#else
-const bool VALIDATION_ENABLED = true;
-#endif
-
 bool must_recreate = false;
 
 void resize_callback(GLFWwindow*, int, int) {
@@ -52,10 +46,10 @@ int main() {
 	std::cout << "Using device: " << base.phys_dev_name << std::endl;
 
 	// Load shaders
-	auto vs = ll::shader::Shader(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shaders/shader.vert.spv");
-	auto fs = ll::shader::Shader(base.device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shaders/shader.frag.spv");
+	auto vs = ll::shader::create(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shaders/shader.vert.spv");
+	auto fs = ll::shader::create(base.device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shaders/shader.frag.spv");
 
-	VkPipelineShaderStageCreateInfo shaders[] = {vs.info, fs.info};
+	VkPipelineShaderStageCreateInfo shaders[] = {vs, fs};
 
 	auto pipeline_lt = ll::pipeline::layout(base.device);
 
@@ -101,7 +95,10 @@ int main() {
 
 	// Everything from here on depends on the swapchain, so we make them
 	// null for now
-	ll::swapchain::Swapchain swapchain;
+	auto swapchain = ll::swapchain::create(base.phys_dev, base.device, base.surface,
+					       VK_NULL_HANDLE,
+					       base.queue_fams.unique.size(), base.queue_fams.unique.data(),
+					       INIT_WIDTH, INIT_HEIGHT);
 	VkRenderPass rpass = VK_NULL_HANDLE;
 	VkPipeline pipeline = VK_NULL_HANDLE;
 	std::vector<VkFramebuffer> fbs;
@@ -120,14 +117,14 @@ int main() {
 		while (must_recreate) {
 			vkDeviceWaitIdle(base.device);
 			// Clean up old stuff
-			if (swapchain.swapchain != VK_NULL_HANDLE) swapchain.destroy();
+			if (swapchain.handle != VK_NULL_HANDLE) ll::swapchain::destroy(base.device, swapchain);
 
 			// Create swapchain
 			auto [wwidth, wheight] = window.get_dims();
-			swapchain = ll::swapchain::Swapchain(base.phys_dev, base.device, base.surface,
-							    VK_NULL_HANDLE,
-							    base.queue_fams.unique.size(), base.queue_fams.unique.data(),
-							    wwidth, wheight);
+			swapchain = ll::swapchain::create(base.phys_dev, base.device, base.surface,
+							  VK_NULL_HANDLE,
+							  base.queue_fams.unique.size(), base.queue_fams.unique.data(),
+							  wwidth, wheight);
 			auto [newwidth, newwheight] = window.get_dims();
 			if (newwidth != wwidth || newwheight != wheight) continue;
 
@@ -196,7 +193,7 @@ int main() {
 		vkResetCommandBuffer(cbuf, 0);
 
 		uint32_t image_idx = 0;
-		if (vkAcquireNextImageKHR(base.device, swapchain.swapchain, UINT64_MAX,
+		if (vkAcquireNextImageKHR(base.device, swapchain.handle, UINT64_MAX,
 				      image_avail_sems[sync_set_idx], VK_NULL_HANDLE, &image_idx)
 		    != VK_SUCCESS) {
 			must_recreate = true;
@@ -242,7 +239,7 @@ int main() {
 		present_info.waitSemaphoreCount = 1;
 		present_info.pWaitSemaphores = &render_done_sems[sync_set_idx];
 		present_info.swapchainCount = 1;
-		present_info.pSwapchains = &swapchain.swapchain;
+		present_info.pSwapchains = &swapchain.handle;
 		present_info.pImageIndices = &image_idx;
 
 		auto res = vkQueuePresentKHR(base.queues.present, &present_info);
@@ -273,10 +270,10 @@ int main() {
 	vkDestroyPipelineLayout(base.device, pipeline_lt, nullptr);
 	vkDestroyRenderPass(base.device, rpass, nullptr);
 
-	vs.destroy(base.device);
-	fs.destroy(base.device);
+	ll::shader::destroy(base.device, vs);
+	ll::shader::destroy(base.device, fs);
 
 	for (auto& i : fbs) vkDestroyFramebuffer(base.device, i, nullptr);
 
-	swapchain.destroy();
+	ll::swapchain::destroy(base.device, swapchain);
 }
