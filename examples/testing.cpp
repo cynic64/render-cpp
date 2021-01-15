@@ -1,4 +1,5 @@
 #include "../src/base.hpp"
+#include "../src/loop.hpp"
 #include "../src/ll/device.hpp"
 #include "../src/ll/instance.hpp"
 #include "../src/ll/phys_dev.hpp"
@@ -9,6 +10,7 @@
 #include "../src/ll/rpass.hpp"
 #include "../src/ll/pipeline.hpp"
 #include "../src/ll/cbuf.hpp"
+#include "../src/ll/sync.hpp"
 #include "../src/timer.hpp"
 #include "../src/glfw_window.hpp"
 
@@ -91,17 +93,10 @@ int main() {
 	std::vector<VkSemaphore> image_avail_sems(CBUF_CT), render_done_sems(CBUF_CT);
 	std::vector<VkFence> render_done_fences(CBUF_CT);
 
-	VkSemaphoreCreateInfo sem_info{};
-	sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fence_info{};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
 	for (size_t i = 0; i < CBUF_CT; ++i) {
-		vkCreateSemaphore(base.device, &sem_info, nullptr, &image_avail_sems[i]);
-		vkCreateSemaphore(base.device, &sem_info, nullptr, &render_done_sems[i]);
-		vkCreateFence(base.device, &fence_info, nullptr, &render_done_fences[i]);
+		image_avail_sems[i] = ll::sync::semaphore(base.device);
+		render_done_sems[i] = ll::sync::semaphore(base.device);
+		render_done_fences[i] = ll::sync::fence(base.device, VK_FENCE_CREATE_SIGNALED_BIT);
 	}
 
 	// Everything from here on depends on the swapchain, so we make them
@@ -178,9 +173,9 @@ int main() {
 				vkDestroySemaphore(base.device, render_done_sems[i], nullptr);
 				vkDestroyFence(base.device, render_done_fences[i], nullptr);
 
-				vkCreateSemaphore(base.device, &sem_info, nullptr, &image_avail_sems[i]);
-				vkCreateSemaphore(base.device, &sem_info, nullptr, &render_done_sems[i]);
-				vkCreateFence(base.device, &fence_info, nullptr, &render_done_fences[i]);
+				image_avail_sems[i] = ll::sync::semaphore(base.device);
+				render_done_sems[i] = ll::sync::semaphore(base.device);
+				render_done_fences[i] = ll::sync::fence(base.device, VK_FENCE_CREATE_SIGNALED_BIT);
 			}
 
 

@@ -22,12 +22,12 @@ namespace base {
 		  surface(VK_NULL_HANDLE), phys_dev(VK_NULL_HANDLE), phys_dev_name(""),
 		  device(VK_NULL_HANDLE)
 	{
-		std::tie(instance, debug_msgr) = deps->create_instance(*this);
-		surface = deps->create_surface(*this);
-		std::tie(phys_dev, phys_dev_name) = deps->create_phys_dev(*this);
-		queue_fams = deps->create_queue_fams(*this);
-		device = deps->create_device(*this);
-		queues = deps->create_queues(*this);
+		std::tie(instance, debug_msgr) = deps->create_instance(std::as_const(*this));
+		surface = deps->create_surface(std::as_const(*this));
+		std::tie(phys_dev, phys_dev_name) = deps->create_phys_dev(std::as_const(*this));
+		queue_fams = deps->create_queue_fams(std::as_const(*this));
+		device = deps->create_device(std::as_const(*this));
+		queues = deps->create_queues(std::as_const(*this));
 	}
 
 	Base::~Base() {

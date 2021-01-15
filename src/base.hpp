@@ -13,12 +13,12 @@ namespace base {
 	struct Base;
 
 	struct Dependencies {
-		virtual std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base) = 0;
-		virtual VkSurfaceKHR create_surface(const Base& base) = 0;
-		virtual std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base& base) = 0;
-		virtual ll::queue::QueueFamilies create_queue_fams(const Base& base) = 0;
-		virtual VkDevice create_device(const Base& base) = 0;
-		virtual ll::queue::Queues create_queues(const Base& base) = 0;
+		virtual std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base&) = 0;
+		virtual VkSurfaceKHR create_surface(const Base&) = 0;
+		virtual std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base&) = 0;
+		virtual ll::queue::QueueFamilies create_queue_fams(const Base&) = 0;
+		virtual VkDevice create_device(const Base&) = 0;
+		virtual ll::queue::Queues create_queues(const Base&) = 0;
 		virtual ~Dependencies() = default;
 	};
 
