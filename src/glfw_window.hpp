@@ -16,7 +16,7 @@ namespace glfw_window {
 
 		GWindow(uint32_t width, uint32_t height);
 
-		std::pair<int, int> get_dims();
+		auto get_dims() const -> std::pair<int, int>;
 
 		~GWindow();
 	};

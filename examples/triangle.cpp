@@ -7,7 +7,7 @@
 
 const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
-int main() {
+auto main() -> int {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
 	// C++ is truly a beautiful language
 	base::Base b(std::make_unique<base::Glfw>(window.req_instance_exts,

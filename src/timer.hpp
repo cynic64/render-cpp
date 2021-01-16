@@ -5,24 +5,27 @@
 #include "iostream"
 
 namespace timer {
+	namespace chrono = std::chrono;
+
 	class Timer {
 	public:
 		Timer() {
-			begin = std::chrono::high_resolution_clock::now();
+			begin = chrono::high_resolution_clock::now();
 		}
 
-		double get_elapsed() {
-			auto elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - begin);
+		auto get_elapsed() -> double {
+			auto now = chrono::high_resolution_clock::now();
+			auto elapsed = chrono::duration_cast<chrono::duration<double>>(now - begin);
 			return elapsed.count();
 		}
 
 		void print_fps(int frames) {
-			auto fps = (double) frames / get_elapsed();
+			auto fps = static_cast<double>(frames) / get_elapsed();
 			std::cout << "FPS: " << fps << std::endl;
 		}
 
 	private:
-		std::chrono::high_resolution_clock::time_point begin;
+		chrono::high_resolution_clock::time_point begin;
 	};
 }
 

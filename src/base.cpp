@@ -17,11 +17,7 @@ namespace base {
 	/*
 	 * Base
 	 */
-	Base::Base(std::unique_ptr<Dependencies>&& deps)
-		: instance(VK_NULL_HANDLE), debug_msgr(VK_NULL_HANDLE),
-		  surface(VK_NULL_HANDLE), phys_dev(VK_NULL_HANDLE), phys_dev_name(""),
-		  device(VK_NULL_HANDLE)
-	{
+	Base::Base(std::unique_ptr<Dependencies>&& deps) {
 		std::tie(instance, debug_msgr) = deps->create_instance(std::as_const(*this));
 		surface = deps->create_surface(std::as_const(*this));
 		std::tie(phys_dev, phys_dev_name) = deps->create_phys_dev(std::as_const(*this));
@@ -35,8 +31,7 @@ namespace base {
 
 		vkDestroyDevice(device, nullptr);
 
-		if (debug_msgr != VK_NULL_HANDLE)
-			ll::instance::destroy_debug_msgr(instance, debug_msgr);
+		if (debug_msgr != VK_NULL_HANDLE) ll::instance::destroy_debug_msgr(instance, debug_msgr);
 		vkDestroyInstance(instance, nullptr);
 	}
 
@@ -44,26 +39,26 @@ namespace base {
 	 * Default
 	 */
 	Default::Default(std::vector<const char *> instance_exts, std::vector<const char *> device_exts)
-		: instance_exts(instance_exts), device_exts(device_exts) {}
+		: instance_exts(std::move(instance_exts)), device_exts(std::move(device_exts)) {}
 
-	std::pair<VkInstance, VkDebugUtilsMessengerEXT> Default::create_instance(const Base&) {
-		// DebugUtils... will only actually be set if validation is enabled
+	auto Default::create_instance(const Base&) -> std::pair<VkInstance, VkDebugUtilsMessengerEXT> {
+		// DebugUtils will only actually be set if validation is enabled
 		std::pair<VkInstance, VkDebugUtilsMessengerEXT> out;
 		ll::instance::create(instance_exts, {}, VALIDATION_ENABLED, &out.first, &out.second);
 
 		return out;
 	}
 
-	VkSurfaceKHR Default::create_surface(const Base&) { return VK_NULL_HANDLE; }
+	auto Default::create_surface(const Base&) -> VkSurfaceKHR { return VK_NULL_HANDLE; }
 
-	std::pair<VkPhysicalDevice, std::string> Default::create_phys_dev(const Base& base) {
+	auto Default::create_phys_dev(const Base& base) -> std::pair<VkPhysicalDevice, std::string> {
 		std::pair<VkPhysicalDevice, std::string> out;
 		out.second = ll::phys_dev::create(base.instance, ll::phys_dev::default_scorer, &out.first);
 
 		return out;
 	}
 
-	ll::queue::QueueFamilies Default::create_queue_fams(const Base& base) {
+	auto Default::create_queue_fams(const Base& base) -> ll::queue::QueueFamilies {
 		ll::queue::QueueFamilies queue_fams;
 		if (base.surface != VK_NULL_HANDLE) queue_fams = {base.phys_dev, base.surface};
 		else queue_fams = {base.phys_dev};
@@ -74,18 +69,18 @@ namespace base {
 		return queue_fams;
 	}
 
-	VkDevice Default::create_device(const Base& base) {
+	auto Default::create_device(const Base& base) -> VkDevice {
 		// The device has to support all our different queue families
 		auto dev_queue_infos = ll::device::default_queue_infos(base.queue_fams.unique.begin(),
 								      base.queue_fams.unique.end());
 
-		VkDevice device;
+		VkDevice device{};
 		ll::device::create(base.phys_dev, dev_queue_infos, {}, device_exts, &device);
 
 		return device;
 	}
 
-	ll::queue::Queues Default::create_queues(const Base& base) {
+	auto Default::create_queues(const Base& base) -> ll::queue::Queues {
 		return ll::queue::Queues(base.device, base.queue_fams);
 	}
 
@@ -93,17 +88,18 @@ namespace base {
 	 * GLFW
 	 */
 	Glfw::Glfw(std::vector<const char *> instance_exts, std::vector<const char *> device_exts,
-		   GLFWwindow* window) : Default(instance_exts, device_exts), window(window) {}
+		   GLFWwindow* window)
+		: Default(std::move(instance_exts), std::move(device_exts)), window(window) {}
 
-	VkSurfaceKHR Glfw::create_surface(const Base &base) {
-		VkSurfaceKHR surface;
+	auto Glfw::create_surface(const Base &base) -> VkSurfaceKHR {
+		VkSurfaceKHR surface{};
 		if (glfwCreateWindowSurface(base.instance, window, nullptr, &surface) != VK_SUCCESS)
 			throw std::runtime_error("Could not create surface!");
 
 		return surface;
 	}
 
-	ll::queue::QueueFamilies Glfw::create_queue_fams(const Base& base) {
+	auto Glfw::create_queue_fams(const Base& base) -> ll::queue::QueueFamilies {
 		auto queues =  Default::create_queue_fams(base);
 		if (!queues.present.has_value())
 			throw std::runtime_error("No present queue!");

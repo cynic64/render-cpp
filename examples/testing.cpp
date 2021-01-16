@@ -24,20 +24,15 @@
 #include <fstream>
 #include <type_traits>
 #include <chrono>
+#include <array>
 
 const uint32_t INIT_WIDTH = 800, INIT_HEIGHT = 600;
 
 const auto CBUF_CT = 4;
 
-bool must_recreate = false;
-
-void resize_callback(GLFWwindow*, int, int) {
-	must_recreate = true;
-}
-
-int main() {
+void run() {
 	auto window = glfw_window::GWindow(INIT_WIDTH, INIT_HEIGHT);
-	glfwSetFramebufferSizeCallback(window.window, resize_callback);
+	// glfwSetFramebufferSizeCallback(window.window, resize_callback);
 
 	base::Base base(std::make_unique<base::Glfw>(window.req_instance_exts,
 						     std::vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME},
@@ -49,7 +44,7 @@ int main() {
 	auto vs = ll::shader::create(base.device, VK_SHADER_STAGE_VERTEX_BIT, "../shaders/shader.vert.spv");
 	auto fs = ll::shader::create(base.device, VK_SHADER_STAGE_FRAGMENT_BIT, "../shaders/shader.frag.spv");
 
-	VkPipelineShaderStageCreateInfo shaders[] = {vs, fs};
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaders = {vs, fs};
 
 	auto pipeline_lt = ll::pipeline::layout(base.device);
 
@@ -59,7 +54,7 @@ int main() {
 	cpool_info.queueFamilyIndex = base.queue_fams.graphics.value();
 	cpool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-	VkCommandPool cpool;
+	VkCommandPool cpool{};
 	if (vkCreateCommandPool(base.device, &cpool_info, nullptr, &cpool) != VK_SUCCESS)
 		throw std::runtime_error("Could not create command pool!");
 
@@ -75,10 +70,10 @@ int main() {
 
 	// Dynamic state (other fields will be filled in later)
 	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.minDepth = 0.0f;
-	viewport.minDepth = 1.0f;
+	viewport.x = 0.0F;
+	viewport.y = 0.0F;
+	viewport.minDepth = 0.0F;
+	viewport.minDepth = 1.0F;
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
@@ -109,7 +104,7 @@ int main() {
 	// Main loop
 	timer::Timer timer;
 	size_t frame_ct = 0;
-	must_recreate = true;
+	auto must_recreate = true;
 
 	while (!glfwWindowShouldClose(window.window)) {
 		glfwPollEvents();
@@ -140,7 +135,7 @@ int main() {
 			rpass = ll::rpass::rpass(base.device, 1, &color_attachment, 1, &subpass, 1, &subpass_dep);
 
 			// Create pipeline
-			pipeline = ll::pipeline::pipeline(base.device, 2, shaders, pipeline_lt, rpass);
+			pipeline = ll::pipeline::pipeline(base.device, 2, shaders.data(), pipeline_lt, rpass);
 
 			// Create framebuffers
 			fbs.resize(swapchain.images.size());
@@ -276,4 +271,12 @@ int main() {
 	for (auto& i : fbs) vkDestroyFramebuffer(base.device, i, nullptr);
 
 	ll::swapchain::destroy(base.device, swapchain);
+}
+
+auto main() -> int {
+	try {
+		run();
+	} catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
 }

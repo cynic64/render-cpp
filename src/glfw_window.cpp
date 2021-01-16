@@ -13,7 +13,7 @@ namespace glfw_window {
 		req_instance_exts = {raw_extensions, raw_extensions + extension_ct};
 	}
 
-	std::pair<int, int> GWindow::get_dims() {
+	auto GWindow::get_dims() const -> std::pair<int, int> {
 		std::pair<int, int> dims;
 		glfwGetFramebufferSize(window, &dims.first, &dims.second);
 

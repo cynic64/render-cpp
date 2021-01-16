@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-O3")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-header-filter=.*;-checks=*")
+set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=-*,bugprone*,clang-analyzer*,concurrency*,misc*,modernize*,performance*,portability*,readability*,-clang-diagnostic-c++17-extensions,-readability-braces-around-statements,-readability-qualified-auto,-readability-implicit-bool-conversion,-readability-named-parameter,-readability-isolate-declaration")
 
 # Set the project name
 project(RenderCpp)

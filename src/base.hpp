@@ -13,27 +13,27 @@ namespace base {
 	struct Base;
 
 	struct Dependencies {
-		virtual std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base&) = 0;
-		virtual VkSurfaceKHR create_surface(const Base&) = 0;
-		virtual std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base&) = 0;
-		virtual ll::queue::QueueFamilies create_queue_fams(const Base&) = 0;
-		virtual VkDevice create_device(const Base&) = 0;
-		virtual ll::queue::Queues create_queues(const Base&) = 0;
+		virtual auto create_instance(const Base&) -> std::pair<VkInstance, VkDebugUtilsMessengerEXT> = 0;
+		virtual auto create_surface(const Base&) -> VkSurfaceKHR = 0;
+		virtual auto create_phys_dev(const Base&) -> std::pair<VkPhysicalDevice, std::string> = 0;
+		virtual auto create_queue_fams(const Base&) -> ll::queue::QueueFamilies = 0;
+		virtual auto create_device(const Base&) -> VkDevice = 0;
+		virtual auto create_queues(const Base&) -> ll::queue::Queues = 0;
+		// Should this be virtual? Should this be default? Who the fuck knows.
 		virtual ~Dependencies() = default;
 	};
 
 	struct Base {
-		VkInstance instance;
-		VkDebugUtilsMessengerEXT debug_msgr;
-		VkSurfaceKHR surface;
-		VkPhysicalDevice phys_dev;
+		VkInstance instance = VK_NULL_HANDLE;
+		VkDebugUtilsMessengerEXT debug_msgr = VK_NULL_HANDLE;
+		VkSurfaceKHR surface = VK_NULL_HANDLE;
+		VkPhysicalDevice phys_dev = VK_NULL_HANDLE;
 		std::string phys_dev_name;
 		ll::queue::QueueFamilies queue_fams;
-		VkDevice device;
+		VkDevice device = VK_NULL_HANDLE;
 		ll::queue::Queues queues;
 
 		Base(std::unique_ptr<Dependencies>&& deps);
-
 		~Base();
 	};
 
@@ -41,12 +41,12 @@ namespace base {
 	// queue. Constructor requires instance and device extensions.
 	struct Default : Dependencies {
 		Default(std::vector<const char *> instance_exts, std::vector<const char *> device_exts);
-		std::pair<VkInstance, VkDebugUtilsMessengerEXT> create_instance(const Base& base);
-		VkSurfaceKHR create_surface(const Base& base);
-		std::pair<VkPhysicalDevice, std::string> create_phys_dev(const Base& base);
-		ll::queue::QueueFamilies create_queue_fams(const Base& base);
-		VkDevice create_device(const Base& base);
-		ll::queue::Queues create_queues(const Base& base);
+		auto create_instance(const Base& base) -> std::pair<VkInstance, VkDebugUtilsMessengerEXT> override;
+		auto create_surface(const Base& base) -> VkSurfaceKHR override;
+		auto create_phys_dev(const Base& base) -> std::pair<VkPhysicalDevice, std::string> override;
+		auto create_queue_fams(const Base& base) -> ll::queue::QueueFamilies override;
+		auto create_device(const Base& base) -> VkDevice override;
+		auto create_queues(const Base& base) -> ll::queue::Queues override;
 	private:
 		std::vector<const char *> instance_exts;
 		std::vector<const char *> device_exts;
@@ -56,8 +56,8 @@ namespace base {
 	struct Glfw : Default {
 		Glfw(std::vector<const char *> instance_exts, std::vector<const char *> device_exts,
 		     GLFWwindow* window);
-		VkSurfaceKHR create_surface(const Base& base);
-		ll::queue::QueueFamilies create_queue_fams(const Base& base);
+		auto create_surface(const Base& base) -> VkSurfaceKHR override;
+		auto create_queue_fams(const Base& base) -> ll::queue::QueueFamilies override;
 	private:
 		GLFWwindow* window;
 	};
